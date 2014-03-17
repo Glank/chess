@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 #include "board.h"
 
 ChessPiece* ChessPiece_new(color_e color, pieceType_e type){
@@ -13,130 +14,137 @@ ChessPiece* ChessPiece_new(color_e color, pieceType_e type){
 void ChessPiece_delete(ChessPiece* self){
     free(self);
 }
+ChessPiece* _ChessPiece_clone(ChessPiece* self){
+    assert(self!=NULL);
+    ChessPiece* clone = (ChessPiece*)malloc(sizeof(ChessPiece));
+    clone->location = self->location;
+    clone->color = self->color;
+    clone->type = self->type;
+    return clone;
+}
 char ChessPiece_getChar(ChessPiece* self){
-    switch(self->type){
-    case KING:   return self->color==WHITE?'K':'k';
-    case QUEEN:  return self->color==WHITE?'Q':'q';
-    case ROOK:   return self->color==WHITE?'R':'r';
-    case KNIGHT: return self->color==WHITE?'N':'n';
-    case BISHOP: return self->color==WHITE?'B':'b';
-    case PAWN:   return self->color==WHITE?'P':'p';
-    default:
-        assert(0);
-        return '?';
-    }
+    char table[] = "KkQqRrNnBbPp";
+    int i = ((int)self->type)+((int)self->color);
+    return table[i];
 }
 int ChessPiece_getZobristID(ChessPiece* self){
-    int a;
-    switch(self->type){
-    case KING:   a = self->color==WHITE?  0: 64; break;
-    case QUEEN:  a = self->color==WHITE?128:192; break;
-    case ROOK:   a = self->color==WHITE?256:320; break;
-    case KNIGHT: a = self->color==WHITE?384:448; break;
-    case BISHOP: a = self->color==WHITE?512:576; break;
-    case PAWN:   a = self->color==WHITE?640:704; break;
-    default:
-        assert(0);
-        a = -1;
+    int i = ((int)self->type)+((int)self->color);
+    i=(i<<6)+(int)self->location;
+    return i;
+}
+
+void ChessPieceSet_initSide(ChessBoard* board, color_e color){
+    ChessPieceSet* set = (ChessPieceSet*)malloc(sizeof(ChessPieceSet));
+    int backRank, pawnRank;
+    if(color==WHITE){
+        assert(board->whitePieces==NULL);
+        board->whitePieces = set;
+        backRank = 0;
+        pawnRank = 1;
     }
-    a+=(int)self->location;
-    return a;
-}
-
-void ChessPieceSet_initWhite(ChessBoard* board){
-    assert(board->whitePieces==NULL);
-    ChessPieceSet* set = (ChessPieceSet*)malloc(sizeof(ChessPieceSet));
-    board->whitePieces = set;
-
-    set->king = ChessPiece_new(WHITE, KING);
-    set->queensCount = 1;
-    set->queens = (ChessPiece**)malloc(sizeof(ChessPiece*));
-    set->queens[0] = ChessPiece_new(WHITE, QUEEN);
-    set->rooksCount = 2;
-    set->rooks = (ChessPiece**)malloc(sizeof(ChessPiece*)*2);
-    set->rooks[0] = ChessPiece_new(WHITE, ROOK);
-    set->rooks[1] = ChessPiece_new(WHITE, ROOK);
-    set->knightsCount = 2;
-    set->knights = (ChessPiece**)malloc(sizeof(ChessPiece*)*2);
-    set->knights[0] = ChessPiece_new(WHITE, KNIGHT);
-    set->knights[1] = ChessPiece_new(WHITE, KNIGHT);
-    set->bishopsCount = 2;
-    set->bishops = (ChessPiece**)malloc(sizeof(ChessPiece*)*2);
-    set->bishops[0] = ChessPiece_new(WHITE, BISHOP);
-    set->bishops[1] = ChessPiece_new(WHITE, BISHOP);
-    set->pawnsCount = 8;
-    set->pawns = (ChessPiece**)malloc(sizeof(ChessPiece*)*8);
+    else{
+        assert(color==BLACK);
+        assert(board->blackPieces==NULL);
+        board->blackPieces = set;
+        backRank = 7;
+        pawnRank = 6;
+    }
     int i;
-    for(i = 0; i < 8; i++)
-        set->pawns[i] = ChessPiece_new(WHITE, PAWN);
-
-    ChessBoard_setPiece(board, set->rooks[0],   RANK_FILE(0,0));
-    ChessBoard_setPiece(board, set->knights[0], RANK_FILE(0,1));
-    ChessBoard_setPiece(board, set->bishops[0], RANK_FILE(0,2));
-    ChessBoard_setPiece(board, set->queens[0],  RANK_FILE(0,3));
-    ChessBoard_setPiece(board, set->king,       RANK_FILE(0,4));
-    ChessBoard_setPiece(board, set->bishops[1], RANK_FILE(0,5));
-    ChessBoard_setPiece(board, set->knights[1], RANK_FILE(0,6));
-    ChessBoard_setPiece(board, set->rooks[1],   RANK_FILE(0,7));
-    for(i=0; i < 8; i++)
-        ChessBoard_setPiece(board, set->pawns[i],   RANK_FILE(1,i));
+    //start with an empty set
+    for(i = 0; i<6; i++)
+        set->piecesCounts[i] = 0;
+        set->piecesByType[i] = NULL;
+    
+    //order of back rank
+    pieceType_e backRankOrder[] = {
+        ROOK, KNIGHT, BISHOP, QUEEN, 
+        KING, BISHOP, KNIGHT, ROOK
+    };
+    //init all the pieces
+    for(i = 0; i<8; i++){
+        ChessPieceSet_add(set, ChessPiece_new(color, backRankOrder[i]),
+            board, RANK_FILE(backRank,i));
+    }
+    for(i = 0; i < 8; i++){
+        ChessPieceSet_add(set, ChessPiece_new(color, PAWN),
+            board, RANK_FILE(pawnRank,i));
+    }
 }
-void ChessPieceSet_initBlack(ChessBoard* board){
-    assert(board->blackPieces==NULL);
-    ChessPieceSet* set = (ChessPieceSet*)malloc(sizeof(ChessPieceSet));
-    board->blackPieces = set;
-
-    set->king = ChessPiece_new(BLACK, KING);
-    set->queensCount = 1;
-    set->queens = (ChessPiece**)malloc(sizeof(ChessPiece*));
-    set->queens[0] = ChessPiece_new(BLACK, QUEEN);
-    set->rooksCount = 2;
-    set->rooks = (ChessPiece**)malloc(sizeof(ChessPiece*)*2);
-    set->rooks[0] = ChessPiece_new(BLACK, ROOK);
-    set->rooks[1] = ChessPiece_new(BLACK, ROOK);
-    set->knightsCount = 2;
-    set->knights = (ChessPiece**)malloc(sizeof(ChessPiece*)*2);
-    set->knights[0] = ChessPiece_new(BLACK, KNIGHT);
-    set->knights[1] = ChessPiece_new(BLACK, KNIGHT);
-    set->bishopsCount = 2;
-    set->bishops = (ChessPiece**)malloc(sizeof(ChessPiece*)*2);
-    set->bishops[0] = ChessPiece_new(BLACK, BISHOP);
-    set->bishops[1] = ChessPiece_new(BLACK, BISHOP);
-    set->pawnsCount = 8;
-    set->pawns = (ChessPiece**)malloc(sizeof(ChessPiece*)*8);
-    int i;
-    for(i = 0; i < 8; i++)
-        set->pawns[i] = ChessPiece_new(BLACK, PAWN);
-
-    ChessBoard_setPiece(board, set->rooks[0],   RANK_FILE(7,0));
-    ChessBoard_setPiece(board, set->knights[0], RANK_FILE(7,1));
-    ChessBoard_setPiece(board, set->bishops[0], RANK_FILE(7,2));
-    ChessBoard_setPiece(board, set->queens[0],  RANK_FILE(7,3));
-    ChessBoard_setPiece(board, set->king,       RANK_FILE(7,4));
-    ChessBoard_setPiece(board, set->bishops[1], RANK_FILE(7,5));
-    ChessBoard_setPiece(board, set->knights[1], RANK_FILE(7,6));
-    ChessBoard_setPiece(board, set->rooks[1],   RANK_FILE(7,7));
-    for(i=0; i < 8; i++)
-        ChessBoard_setPiece(board, set->pawns[i],   RANK_FILE(6,i));
+void ChessPieceSet_add(ChessPieceSet* self, ChessPiece* piece,
+    ChessBoard* board, location_t loc){
+    assert(piece!=NULL);
+    assert(board!=NULL);
+    assert(loc!=UNKNOWN_LOCATION);
+    int type, size, oldSize;
+    ChessPiece** oldArray;
+    type = ((int)piece->type)>>1;
+    oldArray = self->piecesByType[type];
+    oldSize = self->piecesCounts[type];
+    size = oldSize+1;
+    self->piecesByType[type] = (ChessPiece**)malloc(
+        sizeof(ChessPiece*)*size);
+    self->piecesCounts[type] = size;
+    if(size!=1){
+        memcpy(self->piecesByType[type], oldArray, 
+            sizeof(ChessPiece*)*(oldSize));
+        free(oldArray);
+    }
+    self->piecesByType[type][oldSize] = piece;
+    ChessBoard_setPiece(board, piece, loc);
+}
+void _ChessPieceSet_clone(ChessPieceSet* self, ChessBoard* on){
+    ChessPieceSet* clone = (ChessPieceSet*)malloc(
+        sizeof(ChessPieceSet));
+    if(self->piecesByType[0][0]->color==WHITE)
+        on->whitePieces = clone;
+    else
+        on->blackPieces = clone;
+    int type, i, size;
+    ChessPiece* oldPiece;
+    for(type = 0; type<6; type++){
+        size = self->piecesCounts[type];
+        clone->piecesCounts[type] = size;
+        clone->piecesByType[type] = (ChessPiece**)malloc(
+            sizeof(ChessPiece*)*size);
+        for(i = 0; i < size; i++){
+            oldPiece = self->piecesByType[type][i];
+            clone->piecesByType[type][i] = 
+                on->squares[oldPiece->location];
+        }
+    }
+}
+void ChessPieceSet_remove(ChessPieceSet* self, ChessPiece* piece,
+    ChessBoard* board){
+    int type, size, i;
+    type = ((int)piece->type)>>1;
+    size = self->piecesCounts[type];
+    //fine the piece in the list of that type
+    for(i=0; i<size; i++)
+        if(self->piecesByType[type][i]==piece)
+            break;
+    assert(i<size);
+    ChessPiece** oldArray = self->piecesByType[type];
+    self->piecesByType[type] = (ChessPiece**)malloc(
+        sizeof(ChessPiece*)*(size-1));
+    memcpy(self->piecesByType[type], oldArray, 
+        sizeof(ChessPiece*)*i);
+    memcpy(self->piecesByType[type]+i, oldArray+i+1, 
+        sizeof(ChessPiece*)*(size-i-1));
+    self->piecesCounts[type]--;
+    free(oldArray);
+    ChessBoard_removePiece(board, piece);
 }
 void ChessPieceSet_delete(ChessPieceSet* self){
-    ChessPiece_delete(self->king);
-    int i;
-    for(i=0; i<self->queensCount; i++)
-        ChessPiece_delete(self->queens[i]);
-    for(i=0; i<self->rooksCount; i++)
-        ChessPiece_delete(self->rooks[i]);
-    for(i=0; i<self->knightsCount; i++)
-        ChessPiece_delete(self->knights[i]);
-    for(i=0; i<self->bishopsCount; i++)
-        ChessPiece_delete(self->bishops[i]);
-    for(i=0; i<self->pawnsCount; i++)
-        ChessPiece_delete(self->pawns[i]);
-    free(self->queens);
-    free(self->rooks);
-    free(self->knights);
-    free(self->bishops);
-    free(self->pawns);
+    int i,j;
+    for(i=0; i<6; i++){
+        if(self->piecesByType[i]!=NULL){
+            for(j=0; j<self->piecesCounts[i]; j++){
+                assert(self->piecesByType[i][j]!=NULL);
+                ChessPiece_delete(self->piecesByType[i][j]);
+            }
+            free(self->piecesByType[i]);
+        }
+    }
     free(self);
 }
 
@@ -145,11 +153,38 @@ ChessBoard* ChessBoard_new(){
     int i;
     for(i=0; i<64; i++)
         board->squares[i]=NULL;
+    board->hash = 0;
+    board->hash = board->hash
+        ^ZOBRIST_TABLE[ZOB_WHITE_KING_CASTLE]
+        ^ZOBRIST_TABLE[ZOB_WHITE_QUEEN_CASTLE]
+        ^ZOBRIST_TABLE[ZOB_BLACK_KING_CASTLE]
+        ^ZOBRIST_TABLE[ZOB_BLACK_QUEEN_CASTLE];
+    board->flags = 0;
+    board->flags = board->flags
+        ^WHITE_KING_CASTLE_FLAG
+        ^WHITE_QUEEN_CASTLE_FLAG
+        ^BLACK_KING_CASTLE_FLAG
+        ^BLACK_QUEEN_CASTLE_FLAG;
     board->whitePieces=NULL;
     board->blackPieces=NULL;
-    ChessPieceSet_initWhite(board);
-    ChessPieceSet_initBlack(board);
+    ChessPieceSet_initSide(board, WHITE);
+    ChessPieceSet_initSide(board, BLACK);
     return board;
+}
+ChessBoard* ChessBoard_clone(ChessBoard* self){
+    ChessBoard* clone = (ChessBoard*)malloc(sizeof(ChessBoard));
+    clone->flags = self->flags;
+    clone->hash = self->hash;
+    int i;
+    for(i = 0; i < 64; i++){
+        if(self->squares[i]==NULL)
+            clone->squares[i] = NULL;
+        else
+            clone->squares[i] = _ChessPiece_clone(self->squares[i]);
+    }
+    _ChessPieceSet_clone(self->whitePieces, clone);
+    _ChessPieceSet_clone(self->blackPieces, clone);
+    return clone;
 }
 void ChessBoard_delete(ChessBoard* self){
     ChessPieceSet_delete(self->whitePieces);
@@ -167,12 +202,31 @@ char _ChessBoard_getChar(ChessBoard* self, location_t loc){
 }
 void ChessBoard_setPiece(ChessBoard* self, ChessPiece* piece,
     location_t loc){
-    assert(piece->location==UNKNOWN_LOCATION);
-    assert(0<=loc);
     assert(loc<64);
     assert(self->squares[loc]==NULL);
     self->squares[loc] = piece;
     piece->location = loc;
+    zob_hash_t hashAdd = ZOBRIST_TABLE[ChessPiece_getZobristID(piece)];
+    self->hash = self->hash^hashAdd;
+}
+void ChessBoard_removePiece(ChessBoard* self, ChessPiece* piece){
+    assert(piece->location>=0);
+    assert(piece->location<64);
+    assert(self->squares[piece->location]==piece);
+    zob_hash_t hashSub = ZOBRIST_TABLE[ChessPiece_getZobristID(piece)];
+    self->squares[piece->location] = NULL;
+    piece->location = UNKNOWN_LOCATION;
+    self->hash = self->hash^hashSub;
+}
+void ChessBoard_movePiece(ChessBoard* self, ChessPiece* piece,
+    location_t to){
+    assert(self->squares[to]==NULL);
+    zob_hash_t hashSub = ZOBRIST_TABLE[ChessPiece_getZobristID(piece)];
+    self->squares[piece->location] = NULL;
+    piece->location = to;
+    self->squares[to] = piece;
+    zob_hash_t hashAdd = ZOBRIST_TABLE[ChessPiece_getZobristID(piece)];
+    self->hash = self->hash^hashSub^hashAdd;
 }
 void ChessBoard_print(ChessBoard* self){
     int r,f;
@@ -186,8 +240,7 @@ void ChessBoard_print(ChessBoard* self){
                 printf("%d ", r+1);
             else{
                 printf("%c ", 
-                    _ChessBoard_getChar(self, RANK_FILE(r,f))
-                );
+                    _ChessBoard_getChar(self, RANK_FILE(r,f)));
             }
         }
         printf("\n");
