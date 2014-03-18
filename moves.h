@@ -10,6 +10,7 @@ struct ChessMoveGenerator{
     ChessBoard** tempNext;
     int tempNextFilled;
     ChessBoard* currentBoard;
+    ChessBoard* cloneTemplate;
     color_e toPlay;
     int inCheck;
     ChessPieceSet* curSet;

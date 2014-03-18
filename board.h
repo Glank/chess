@@ -49,6 +49,7 @@ struct ChessPieceSet{
 //create new sets and add them to the board
 // that includes putting the pieces on the correct squares
 void ChessPieceSet_initSide(ChessBoard* board, color_e color);
+//adds a piece to the set and the board
 void ChessPieceSet_add(ChessPieceSet* self, ChessPiece* piece,
     ChessBoard* board, location_t loc);
 //removes a piece from the set and the board but does not free it.
@@ -75,6 +76,12 @@ void ChessBoard_setPiece(ChessBoard* self,
 void ChessBoard_removePiece(ChessBoard* self, ChessPiece* piece);
 void ChessBoard_movePiece(ChessBoard* self, ChessPiece* piece,
     location_t loc);
+void ChessBoard_movePieceByLoc(ChessBoard* self, location_t from,
+    location_t to);
 ChessBoard* ChessBoard_clone(ChessBoard* self);
+void ChessBoard_toggleToPlay(ChessBoard* self);
+void ChessBoard_unsetCastleFlag(ChessBoard* self, flag_t flag);
+void ChessBoard_setEnPassantFlags(ChessBoard* self, int file);
+void ChessBoard_clearEnPassantFlags(ChessBoard* self);
 void ChessBoard_print(ChessBoard* self);
 #endif
