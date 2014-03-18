@@ -11,17 +11,22 @@ typedef uint8_t location_t;
 #define RANK_FILE(r,f) ((r<<3)|f)
 #define GET_RANK(loc) (loc>>3)
 #define GET_FILE(loc) (loc&7)
-typedef uint8_t flag_t;
+typedef uint16_t flag_t;
 #define WHITE_KING_CASTLE_FLAG 1
 #define WHITE_QUEEN_CASTLE_FLAG 2
 #define BLACK_KING_CASTLE_FLAG 4
 #define BLACK_QUEEN_CASTLE_FLAG 8
-#define EN_PASSANT_FLAG_OFFSET 4
+#define EN_PASSANT_FLAGS_OFFSET 4
 #define TO_PLAY_FLAG 128
+#define WHITE_IN_CHECK_FLAG 256
+#define BLACK_IN_CHECK_FLAG 512
 typedef enum {WHITE=0, BLACK=1} color_e;
+#define OTHER_COLOR(c) ((color_e)(((int)c)^1))
 typedef enum {
     KING=0, QUEEN=2, ROOK=4, KNIGHT=6, BISHOP=8, PAWN=10
 } pieceType_e;
+#define TYPE_TO_INT(type) (((int)type)>>1)
+#define TYPE_COLOR_TO_INT(type,color) (((int)type)+((int)color))
 
 struct ChessPiece{
     location_t location;
@@ -55,6 +60,7 @@ void ChessPieceSet_delete(ChessPieceSet* set);
 struct ChessBoard{
     ChessBoard* previous;
     ChessBoard** next;
+    int nextCount;
     ChessPiece* squares[64];
     ChessPieceSet* whitePieces;
     ChessPieceSet* blackPieces;

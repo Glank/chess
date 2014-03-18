@@ -24,11 +24,11 @@ ChessPiece* _ChessPiece_clone(ChessPiece* self){
 }
 char ChessPiece_getChar(ChessPiece* self){
     char table[] = "KkQqRrNnBbPp";
-    int i = ((int)self->type)+((int)self->color);
+    int i = TYPE_COLOR_TO_INT(self->type, self->color);
     return table[i];
 }
 int ChessPiece_getZobristID(ChessPiece* self){
-    int i = ((int)self->type)+((int)self->color);
+    int i = TYPE_COLOR_TO_INT(self->type, self->color);
     i=(i<<6)+(int)self->location;
     return i;
 }
@@ -77,7 +77,7 @@ void ChessPieceSet_add(ChessPieceSet* self, ChessPiece* piece,
     assert(loc!=UNKNOWN_LOCATION);
     int type, size, oldSize;
     ChessPiece** oldArray;
-    type = ((int)piece->type)>>1;
+    type = TYPE_TO_INT(piece->type);
     oldArray = self->piecesByType[type];
     oldSize = self->piecesCounts[type];
     size = oldSize+1;
@@ -116,7 +116,7 @@ void _ChessPieceSet_clone(ChessPieceSet* self, ChessBoard* on){
 void ChessPieceSet_remove(ChessPieceSet* self, ChessPiece* piece,
     ChessBoard* board){
     int type, size, i;
-    type = ((int)piece->type)>>1;
+    type = TYPE_TO_INT(piece->type);
     size = self->piecesCounts[type];
     //fine the piece in the list of that type
     for(i=0; i<size; i++)
