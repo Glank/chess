@@ -14,7 +14,6 @@ struct ChessMoveGenerator{
     color_e toPlay;
     int inCheck;
     ChessPieceSet* curSet;
-    ChessPieceSet* othSet;
     ChessPiece** potentialCheckingPieces;
     int potentialCheckingPiecesCount;
 }
