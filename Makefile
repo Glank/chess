@@ -1,7 +1,10 @@
 CFLAGS=-Wall -g
-OBJS=board.o zobrist.o
+OBJS=board.o zobrist.o moves.o
 
 all:	test
+
+moves.o: moves.h moves.c board.h
+	$(CC) $(CFLAGS) -c moves.c
 
 zobrist.o: zobrist.h zobrist.c
 	$(CC) $(CFLAGS) -c zobrist.c

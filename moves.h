@@ -14,9 +14,7 @@ struct ChessMoveGenerator{
     color_e toPlay;
     int inCheck;
     ChessPieceSet* curSet;
-    ChessPiece** potentialCheckingPieces;
-    int potentialCheckingPiecesCount;
-}
+};
 //sets self->next and associated vars
 //takes non-trivial time
 ChessMoveGenerator* ChessMoveGenerator_new();
