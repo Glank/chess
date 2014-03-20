@@ -23,6 +23,7 @@ int __generateSimpleMove(ChessMoveGenerator* self, ChessPiece* piece,
 int __finalizeOrDelete(ChessMoveGenerator* self, ChessBoard* board, int validate);
 int __testForCheck(ChessBoard* board, color_e color);
 ChessBoard* __getCleanBoard(ChessMoveGenerator* self);
+void __finish(ChessMoveGenerator* self);
 
 ChessMoveGenerator* ChessMoveGenerator_new(){
     ChessMoveGenerator* self = (ChessMoveGenerator*)
@@ -30,6 +31,7 @@ ChessMoveGenerator* ChessMoveGenerator_new(){
     self->tempNext = (ChessBoard**)malloc(
         sizeof(ChessBoard*)*MOVE_GEN_MAX_ALLOCATED);
     self->tempNextFilled = 0;
+    self->cloneTemplate = NULL;
     return self;
 }
 
@@ -41,16 +43,38 @@ void ChessMoveGenerator_delete(ChessMoveGenerator* self){
 void ChessMoveGenerator_generateMoves(
     ChessMoveGenerator* self, ChessBoard* from){
     self->currentBoard = from;
+    printf("Initializing\n");
     __initIterValues(self);
-    __generatePawnMoves(self);
-    __generateBishopMoves(self);
+    //__generatePawnMoves(self);
+    //__generateBishopMoves(self);
+    printf("Generating\n");
     __generateKnightMoves(self);
-    __generateRookMoves(self);
-    __generateQueenMoves(self);
-    __generateKingMoves(self);
+    //__generateRookMoves(self);
+    //__generateQueenMoves(self);
+    //__generateKingMoves(self);
     //TODO
     //__generateCastlings(self);
     //__generateEnPassant(self);
+    printf("Finishing\n");
+    __finish(self);
+    
+}
+
+void __finish(ChessMoveGenerator* self){
+    int i;
+    self->currentBoard->nextCount = self->tempNextFilled;
+    self->currentBoard->next = (ChessBoard**)malloc(
+        sizeof(ChessBoard*)*self->tempNextFilled);
+    ChessBoard* next;
+    for(i = 0; i < self->tempNextFilled; i++){
+        next = self->tempNext[i];
+        next->previous = self->currentBoard;
+        self->currentBoard->next[i] = next;
+    }
+    if(self->cloneTemplate!=NULL){
+        ChessBoard_delete(self->cloneTemplate);
+        self->cloneTemplate = NULL;
+    }
 }
 
 void __initIterValues(ChessMoveGenerator* self){
@@ -88,14 +112,18 @@ int __testForCheck(ChessBoard* board, color_e color){
         if(kingFile>0){
             pawn = board->squares[RANK_FILE(pawnRank, kingFile-1)];
             if((pawn!=NULL) && (pawn->type==PAWN) && 
-                (pawn->color!=color))
+                (pawn->color!=color)){
+                printf("Check by pawn.\n");
                 return 1;
+            }
         }
         if(kingFile<7){
             pawn = board->squares[RANK_FILE(pawnRank, kingFile+1)];
             if((pawn!=NULL) && (pawn->type==PAWN) && 
-                (pawn->color!=color))
+                (pawn->color!=color)){
+                printf("Check by pawn.\n");
                 return 1;
+            }
         }
     }
     //test for check by knight
@@ -129,8 +157,10 @@ int __testForCheck(ChessBoard* board, color_e color){
                 rank+=rankDelta;
                 file+=fileDelta;
             }
-            if(rank==kingRank)
+            if(rank==kingRank){
+                printf("Check by bishop.\n");
                 return 1;
+            }
         }
     }
     //test for check by rook
@@ -142,7 +172,8 @@ int __testForCheck(ChessBoard* board, color_e color){
         fileDelta = kingFile-GET_FILE(rook->location);
         if((rankDelta == 0)||(fileDelta == 0)){
             //the king is on a rank or a file with this opposing rook 
-            //check every square inbetween to see if the rook is blocked 
+            //check every square inbetween to see if the rook 
+            //is blocked 
             if(fileDelta!=0) fileDelta = fileDelta>0?1:-1;
             if(rankDelta!=0) rankDelta = rankDelta>0?1:-1;
             rank = GET_RANK(rook->location)+rankDelta;
@@ -153,8 +184,10 @@ int __testForCheck(ChessBoard* board, color_e color){
                 rank+=rankDelta;
                 file+=fileDelta;
             }
-            if(rank==kingRank && file==kingFile)
+            if(rank==kingRank && file==kingFile){
+                printf("Check by rook\n");
                 return 1;
+            }
         }
     }
     //test for check by queen
@@ -166,8 +199,9 @@ int __testForCheck(ChessBoard* board, color_e color){
         fileDelta = kingFile-GET_FILE(queen->location);
         if((rankDelta*rankDelta == fileDelta*fileDelta)||
             (rankDelta == 0)||(fileDelta == 0)){
-            //the king is on a diagonal, rank or file with this opposing queen
-            //check every square inbetween to see if the rook is blocked 
+            //the king is on a diagonal, rank or file with 
+            //this opposing queen, check every square
+            //inbetween to see if the queen is blocked 
             if(fileDelta!=0) fileDelta = fileDelta>0?1:-1;
             if(rankDelta!=0) rankDelta = rankDelta>0?1:-1;
             rank = GET_RANK(queen->location)+rankDelta;
@@ -178,8 +212,10 @@ int __testForCheck(ChessBoard* board, color_e color){
                 rank+=rankDelta;
                 file+=fileDelta;
             }
-            if(rank==kingRank && file==kingFile)
+            if(rank==kingRank && file==kingFile){
+                printf("Check by queen.");
                 return 1;
+            }
         }
     }
     //test for check by other king
@@ -188,14 +224,18 @@ int __testForCheck(ChessBoard* board, color_e color){
     ChessPiece* opKing = opPieces->piecesByType[TYPE_TO_INT(KING)][0];
     rankDelta = kingRank-GET_RANK(opKing->location);
     fileDelta = kingFile-GET_FILE(opKing->location);
-    if((rankDelta*rankDelta+fileDelta*fileDelta)<=2)
+    if((rankDelta*rankDelta+fileDelta*fileDelta)<=2){
+        printf("Check by other king\n");
         return 1;
+    }
     //Otherwise, the king is not in check
+    printf("Not in check.\n");
     return 0;
 }
 
-int __finalizeOrDelete(ChessMoveGenerator* self, ChessBoard* board, int validate){
-    if(!validate || __testForCheck(board, self->toPlay)){
+int __finalizeOrDelete(ChessMoveGenerator* self, 
+    ChessBoard* board, int validate){
+    if(validate && __testForCheck(board, self->toPlay)){
         ChessBoard_delete(board);
         return 0;
     }
@@ -399,7 +439,8 @@ void __generateQueenMoves(ChessMoveGenerator* self){
 }
 int __generateSimpleMove(ChessMoveGenerator* self, ChessPiece* piece, 
     int dRank, int dFile, int validate){
-    //returns 1 if the move was succesfull, 0 if it failed because of check, 
+    //returns 1 if the move was succesfull, 
+    //0 if it failed because of check, 
     //and -1 if it failed because it was out of bounds/blocked
     ChessBoard* clone;
     ChessPieceSet* opSet;
@@ -408,15 +449,19 @@ int __generateSimpleMove(ChessMoveGenerator* self, ChessPiece* piece,
     rank = GET_RANK(piece->location)+dRank;
     file = GET_FILE(piece->location)+dFile;
     if(((rank&7)==rank) && ((file&7)==file)){
-        clone = __getCleanBoard(self);
-        capture = clone->squares[RANK_FILE(rank,file)];
-        if((capture==NULL) && (capture->color != self->toPlay)){
-            opSet = self->toPlay==WHITE?clone->blackPieces:clone->whitePieces;
+        capture = self->currentBoard->squares[RANK_FILE(rank,file)];
+        if((capture!=NULL) && (capture->color != self->toPlay)){
+            clone = __getCleanBoard(self);
+            capture = clone->squares[RANK_FILE(rank,file)];
+            opSet = self->toPlay==WHITE?
+                clone->blackPieces:clone->whitePieces;
             ChessPieceSet_remove(opSet, capture, clone);
             ChessPiece_delete(capture);
         }
         else if(capture!=NULL)
             return -1;
+        else
+            clone = __getCleanBoard(self);
         ChessBoard_movePieceByLoc(clone, piece->location, 
             RANK_FILE(rank, file));
         if(__finalizeOrDelete(self, clone, validate)) return 1;
@@ -430,7 +475,8 @@ void __generateKnightMoves(ChessMoveGenerator* self){
     ChessPiece* knight;
     for(i=0;i<size;i++){
         knight = self->curSet->piecesByType[TYPE_TO_INT(KNIGHT)][i];
-        if(__generateSimpleMove(self, knight, 2, -1, 1)==0 && !self->inCheck) continue;
+        if(__generateSimpleMove(self, knight, 2, -1, 1)==0 &&
+            !self->inCheck) continue;
         __generateSimpleMove(self, knight, 2, 1, self->inCheck);
         __generateSimpleMove(self, knight, 1, 2, self->inCheck);
         __generateSimpleMove(self, knight, -1, 2, self->inCheck);

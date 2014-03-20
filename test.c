@@ -8,19 +8,17 @@
 int main(void){
     initZobrist();
     ChessBoard* board = ChessBoard_new();
-    ChessBoard* clone = ChessBoard_clone(board);
-
-    ChessPiece* kingPawn = clone->squares[RANK_FILE(1,4)];
-    ChessBoard_movePiece(clone, kingPawn, RANK_FILE(3,4));
+    ChessMoveGenerator* gen = ChessMoveGenerator_new();
 
     printf("%d\n", (int)board->hash);
     ChessBoard_print(board);
-    printf("\n");
-    printf("%d\n", (int)clone->hash);
-    ChessBoard_print(clone);
-    
+
+    ChessMoveGenerator_generateMoves(gen, board);
+    printf("%d\n", board->nextCount);
+
+    ChessMoveGenerator_delete(gen);
+    ChessBoard_deleteAllNext(board);
     ChessBoard_delete(board);
-    ChessBoard_delete(clone);
     closeZobrist();
     return 0;
 }

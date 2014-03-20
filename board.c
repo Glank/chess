@@ -165,6 +165,9 @@ ChessBoard* ChessBoard_new(){
         ^WHITE_QUEEN_CASTLE_FLAG
         ^BLACK_KING_CASTLE_FLAG
         ^BLACK_QUEEN_CASTLE_FLAG;
+    board->previous = NULL;
+    board->next = NULL;
+    board->nextCount = -1;
     board->whitePieces=NULL;
     board->blackPieces=NULL;
     ChessPieceSet_initSide(board, WHITE);
@@ -184,12 +187,27 @@ ChessBoard* ChessBoard_clone(ChessBoard* self){
     }
     _ChessPieceSet_clone(self->whitePieces, clone);
     _ChessPieceSet_clone(self->blackPieces, clone);
+    clone->previous = NULL;
+    clone->next = NULL;
+    clone->nextCount = -1;
     return clone;
 }
 void ChessBoard_delete(ChessBoard* self){
+    assert(self->next==NULL);
     ChessPieceSet_delete(self->whitePieces);
     ChessPieceSet_delete(self->blackPieces);
     free(self);
+}
+void ChessBoard_deleteAllNext(ChessBoard* self){
+    int i;
+    for(i = 0; i < self->nextCount; i++){
+        ChessBoard_deleteAllNext(self->next[i]);
+        ChessBoard_delete(self->next[i]);
+    }
+    if(self->next!=NULL)
+        free(self->next);
+    self->next = NULL;
+    self->nextCount = -1;
 }
 char _ChessBoard_getChar(ChessBoard* self, location_t loc){
     assert(self!=NULL);
@@ -227,6 +245,54 @@ void ChessBoard_movePiece(ChessBoard* self, ChessPiece* piece,
     self->squares[to] = piece;
     zob_hash_t hashAdd = ZOBRIST_TABLE[ChessPiece_getZobristID(piece)];
     self->hash = self->hash^hashSub^hashAdd;
+}
+void ChessBoard_movePieceByLoc(ChessBoard* self, location_t from,
+    location_t to){
+    ChessPiece* toMove = self->squares[from];
+    ChessBoard_movePiece(self, toMove, to);
+}
+void ChessBoard_toggleToPlay(ChessBoard* self){
+    self->flags = self->flags^TO_PLAY_FLAG;
+    zob_hash_t hash = ZOBRIST_TABLE[ZOB_TO_PLAY];
+    self->hash = self->hash^hash;
+}
+void ChessBoard_unsetCastleFlag(ChessBoard* self, flag_t flag){
+    if(self->flags&flag){
+        self->flags = self->flags&(~flag);
+        int zob_id;
+        switch(flag){
+        case WHITE_KING_CASTLE_FLAG:
+            zob_id=ZOB_WHITE_KING_CASTLE;
+            break;
+        case WHITE_QUEEN_CASTLE_FLAG:
+            zob_id=ZOB_WHITE_QUEEN_CASTLE;
+            break;
+        case BLACK_KING_CASTLE_FLAG:
+            zob_id=ZOB_BLACK_KING_CASTLE;
+            break;
+        case BLACK_QUEEN_CASTLE_FLAG:
+            zob_id=ZOB_BLACK_QUEEN_CASTLE;
+            break;
+        default:
+            assert(0);
+        }
+        zob_hash_t hash = ZOBRIST_TABLE[zob_id];
+        self->hash = self->hash^hash;
+    }
+}
+void ChessBoard_setEnPassantFlags(ChessBoard* self, int file){
+    ChessBoard_clearEnPassantFlags(self);
+    self->flags = self->flags|(file<<EN_PASSANT_FILE_OFFSET)|
+        EN_PASSANT_FLAG;
+    zob_hash_t hash = ZOBRIST_TABLE[file+ZOB_EN_PASSANT_START];
+    self->hash^=hash;
+}
+void ChessBoard_clearEnPassantFlags(ChessBoard* self){
+    if(self->flags&EN_PASSANT_FLAG){
+        int file = (self->flags>>EN_PASSANT_FILE_OFFSET)&7;
+        zob_hash_t hash = ZOBRIST_TABLE[file+ZOB_EN_PASSANT_START];
+        self->hash^=hash;
+    }
 }
 void ChessBoard_print(ChessBoard* self){
     int r,f;

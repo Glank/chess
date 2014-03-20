@@ -16,8 +16,9 @@ typedef uint16_t flag_t;
 #define WHITE_QUEEN_CASTLE_FLAG 2
 #define BLACK_KING_CASTLE_FLAG 4
 #define BLACK_QUEEN_CASTLE_FLAG 8
-#define EN_PASSANT_FLAGS_OFFSET 4
-#define TO_PLAY_FLAG 128
+#define EN_PASSANT_FLAG 16
+#define EN_PASSANT_FILE_OFFSET 5
+#define TO_PLAY_FLAG 1024
 #define WHITE_IN_CHECK_FLAG 256
 #define BLACK_IN_CHECK_FLAG 512
 typedef enum {WHITE=0, BLACK=1} color_e;
@@ -71,6 +72,8 @@ struct ChessBoard{
 ChessBoard* ChessBoard_new();
 //frees everything except previous and next
 void ChessBoard_delete(ChessBoard* self);
+//recursively delete next and all of it's children if they exist
+void ChessBoard_deleteAllNext(ChessBoard* self);
 void ChessBoard_setPiece(ChessBoard* self, 
     ChessPiece* piece, location_t loc);
 void ChessBoard_removePiece(ChessBoard* self, ChessPiece* piece);
