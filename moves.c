@@ -43,19 +43,16 @@ void ChessMoveGenerator_delete(ChessMoveGenerator* self){
 void ChessMoveGenerator_generateMoves(
     ChessMoveGenerator* self, ChessBoard* from){
     self->currentBoard = from;
-    printf("Initializing\n");
     __initIterValues(self);
-    //__generatePawnMoves(self);
-    //__generateBishopMoves(self);
-    printf("Generating\n");
+    __generatePawnMoves(self);
+    __generateBishopMoves(self);
     __generateKnightMoves(self);
-    //__generateRookMoves(self);
-    //__generateQueenMoves(self);
-    //__generateKingMoves(self);
+    __generateRookMoves(self);
+    __generateQueenMoves(self);
+    __generateKingMoves(self);
     //TODO
     //__generateCastlings(self);
     //__generateEnPassant(self);
-    printf("Finishing\n");
     __finish(self);
     
 }
@@ -113,7 +110,6 @@ int __testForCheck(ChessBoard* board, color_e color){
             pawn = board->squares[RANK_FILE(pawnRank, kingFile-1)];
             if((pawn!=NULL) && (pawn->type==PAWN) && 
                 (pawn->color!=color)){
-                printf("Check by pawn.\n");
                 return 1;
             }
         }
@@ -121,7 +117,6 @@ int __testForCheck(ChessBoard* board, color_e color){
             pawn = board->squares[RANK_FILE(pawnRank, kingFile+1)];
             if((pawn!=NULL) && (pawn->type==PAWN) && 
                 (pawn->color!=color)){
-                printf("Check by pawn.\n");
                 return 1;
             }
         }
@@ -158,7 +153,6 @@ int __testForCheck(ChessBoard* board, color_e color){
                 file+=fileDelta;
             }
             if(rank==kingRank){
-                printf("Check by bishop.\n");
                 return 1;
             }
         }
@@ -185,7 +179,6 @@ int __testForCheck(ChessBoard* board, color_e color){
                 file+=fileDelta;
             }
             if(rank==kingRank && file==kingFile){
-                printf("Check by rook\n");
                 return 1;
             }
         }
@@ -206,14 +199,14 @@ int __testForCheck(ChessBoard* board, color_e color){
             if(rankDelta!=0) rankDelta = rankDelta>0?1:-1;
             rank = GET_RANK(queen->location)+rankDelta;
             file = GET_FILE(queen->location)+fileDelta;
-            while(rank!=kingRank && file!=kingFile){
-                if(board->squares[RANK_FILE(rank,file)]!=NULL)
+            while(rank!=kingRank || file!=kingFile){
+                if(board->squares[RANK_FILE(rank,file)]!=NULL){
                     break;
+                }
                 rank+=rankDelta;
                 file+=fileDelta;
             }
             if(rank==kingRank && file==kingFile){
-                printf("Check by queen.");
                 return 1;
             }
         }
@@ -225,11 +218,9 @@ int __testForCheck(ChessBoard* board, color_e color){
     rankDelta = kingRank-GET_RANK(opKing->location);
     fileDelta = kingFile-GET_FILE(opKing->location);
     if((rankDelta*rankDelta+fileDelta*fileDelta)<=2){
-        printf("Check by other king\n");
         return 1;
     }
     //Otherwise, the king is not in check
-    printf("Not in check.\n");
     return 0;
 }
 
@@ -297,7 +288,7 @@ void __generatePawnCapture(ChessMoveGenerator* self, ChessPiece* pawn, int rank,
             ChessPieceSet_remove(opSet, capture, clone);
             ChessPiece_delete(capture);
             promoted->location = UNKNOWN_LOCATION;
-            __generatePawnPromotions(self, clone, promoted, RANK_FILE(rank+pawnDirection, file));
+            __generatePawnPromotions(self, clone, promoted, RANK_FILE(rank+pawnDirection, file+dir));
         }
         else{
             //do normal capture
@@ -308,7 +299,7 @@ void __generatePawnCapture(ChessMoveGenerator* self, ChessPiece* pawn, int rank,
             ChessPieceSet_remove(opSet, capture, clone);
             ChessPiece_delete(capture);
             ChessBoard_movePieceByLoc(clone, pawn->location, 
-                RANK_FILE(rank+pawnDirection, file));
+                RANK_FILE(rank+pawnDirection, file+dir));
             __finalizeOrDelete(self, clone, 1);
         }
     }
@@ -394,7 +385,11 @@ void __generateDirectionalMoves(ChessMoveGenerator* self, ChessPiece* piece, int
             ChessBoard_movePieceByLoc(clone, piece->location, 
                 RANK_FILE(rank, file));
             __finalizeOrDelete(self, clone, self->inCheck||(!validated));
+            break;
         }
+        else break; //you hit your own piece
+        rank+=dRank;
+        file+=dFile;
     }
 }
 void __generateBishopMoves(ChessMoveGenerator* self){

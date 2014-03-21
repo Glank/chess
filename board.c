@@ -294,6 +294,13 @@ void ChessBoard_clearEnPassantFlags(ChessBoard* self){
         self->hash^=hash;
     }
 }
+void ChessBoard_quickRemoveByLoc(ChessBoard* self, location_t loc){
+    ChessPiece* piece = self->squares[loc];
+    ChessPieceSet* set = piece->color==WHITE?
+        self->whitePieces:self->blackPieces;
+    ChessPieceSet_remove(set, piece, self);
+    ChessPiece_delete(piece);
+}
 void ChessBoard_print(ChessBoard* self){
     int r,f;
     for(r=7; r>=-1; r--){

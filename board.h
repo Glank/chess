@@ -77,6 +77,7 @@ void ChessBoard_deleteAllNext(ChessBoard* self);
 void ChessBoard_setPiece(ChessBoard* self, 
     ChessPiece* piece, location_t loc);
 void ChessBoard_removePiece(ChessBoard* self, ChessPiece* piece);
+void ChessBoard_quickRemoveByLoc(ChessBoard* self, location_t loc);
 void ChessBoard_movePiece(ChessBoard* self, ChessPiece* piece,
     location_t loc);
 void ChessBoard_movePieceByLoc(ChessBoard* self, location_t from,

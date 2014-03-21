@@ -4,6 +4,7 @@
 #include "board.h"
 #include "zobrist.h"
 #include "moves.h"
+#define LOC(str) ((str[1]-'1')<<3)+((str[0]-'a'))
 
 int main(void){
     initZobrist();
@@ -15,6 +16,16 @@ int main(void){
 
     ChessMoveGenerator_generateMoves(gen, board);
     printf("%d\n", board->nextCount);
+
+    /*
+    int i;
+    ChessBoard* next;
+    for(i = 0; i < board->nextCount; i++){
+        next = board->next[i];
+        ChessBoard_print(next);
+        printf("\n");
+    }
+    //*/
 
     ChessMoveGenerator_delete(gen);
     ChessBoard_deleteAllNext(board);
