@@ -4,13 +4,17 @@
 
 void __initIterValues(ChessMoveGenerator* self);
 void __generatePawnMoves(ChessMoveGenerator* self);
-int __generatePawnPromotion(ChessMoveGenerator* self, ChessBoard* setup, pieceType_e type,
+int __generatePawnPromotion(ChessMoveGenerator* self, 
+    ChessBoard* setup, pieceType_e type,
     location_t location, int validate);
-void __generatePawnPromotions(ChessMoveGenerator* self, ChessBoard* setup, ChessPiece* freePiece,
+void __generatePawnPromotions(ChessMoveGenerator* self, 
+    ChessBoard* setup, ChessPiece* freePiece,
     location_t location);
-void __generatePawnCapture(ChessMoveGenerator* self, ChessPiece* pawn, int rank, int file, int dir, 
+void __generatePawnCapture(ChessMoveGenerator* self, ChessPiece* pawn,
+    int rank, int file, int dir, 
     int pawnDirection, int lastRank);
-void __generateDirectionalMoves(ChessMoveGenerator* self, ChessPiece* piece, int dRank, int dFile);
+void __generateDirectionalMoves(ChessMoveGenerator* self,
+    ChessPiece* piece, int dRank, int dFile);
 void __generateBishopMoves(ChessMoveGenerator* self);
 void __generateKnightMoves(ChessMoveGenerator* self);
 void __generateRookMoves(ChessMoveGenerator* self);
@@ -20,7 +24,8 @@ void __generateCastlings(ChessMoveGenerator* self);
 void __generateEnPassant(ChessMoveGenerator* self);
 int __generateSimpleMove(ChessMoveGenerator* self, ChessPiece* piece, 
     int dRank, int dFile, int validate);
-int __finalizeOrDelete(ChessMoveGenerator* self, ChessBoard* board, int validate);
+int __finalizeOrDelete(ChessMoveGenerator* self, 
+    ChessBoard* board, int validate);
 int __testForCheck(ChessBoard* board, color_e color);
 ChessBoard* __getCleanBoard(ChessMoveGenerator* self);
 void __finish(ChessMoveGenerator* self);
@@ -50,9 +55,8 @@ void ChessMoveGenerator_generateMoves(
     __generateRookMoves(self);
     __generateQueenMoves(self);
     __generateKingMoves(self);
-    //TODO
-    //__generateCastlings(self);
-    //__generateEnPassant(self);
+    __generateEnPassant(self);
+    __generateCastlings(self);
     __finish(self);
     
 }
@@ -242,27 +246,32 @@ int __finalizeOrDelete(ChessMoveGenerator* self,
 ChessBoard* __getCleanBoard(ChessMoveGenerator* self){
     return ChessBoard_clone(self->cloneTemplate);
 }
-int __generatePawnPromotion(ChessMoveGenerator* self, ChessBoard* setup, pieceType_e type,
+int __generatePawnPromotion(ChessMoveGenerator* self, 
+    ChessBoard* setup, pieceType_e type,
     location_t location, int validate){
     ChessBoard* clone = ChessBoard_clone(setup);
     ChessPiece* promoted = ChessPiece_new(self->toPlay, type);
-    ChessPieceSet* set = self->toPlay==WHITE?clone->whitePieces:clone->blackPieces;
+    ChessPieceSet* set = self->toPlay==WHITE?
+        clone->whitePieces:clone->blackPieces;
     ChessPieceSet_add(set, promoted, clone, location);
     return __finalizeOrDelete(self, clone, validate);
 }
-void __generatePawnPromotions(ChessMoveGenerator* self, ChessBoard* setup, ChessPiece* freePiece,
+void __generatePawnPromotions(ChessMoveGenerator* self,
+    ChessBoard* setup, ChessPiece* freePiece,
     location_t location){
     if(__generatePawnPromotion(self, setup, QUEEN, location, 1)){
         __generatePawnPromotion(self, setup, ROOK, location, 0);
         __generatePawnPromotion(self, setup, KNIGHT, location, 0);
         //gen bishop
         freePiece->type = BISHOP;
-        ChessPieceSet* set = self->toPlay==WHITE?setup->whitePieces:setup->blackPieces;
+        ChessPieceSet* set = self->toPlay==WHITE?
+            setup->whitePieces:setup->blackPieces;
         ChessPieceSet_add(set, freePiece, setup, location);
         __finalizeOrDelete(self, setup, 0);
     }
 }
-void __generatePawnCapture(ChessMoveGenerator* self, ChessPiece* pawn, int rank, int file, int dir, 
+void __generatePawnCapture(ChessMoveGenerator* self, ChessPiece* pawn,
+    int rank, int file, int dir, 
     int pawnDirection, int lastRank){
     ChessBoard* clone;
     ChessPiece* capture, *promoted;
@@ -288,12 +297,14 @@ void __generatePawnCapture(ChessMoveGenerator* self, ChessPiece* pawn, int rank,
             ChessPieceSet_remove(opSet, capture, clone);
             ChessPiece_delete(capture);
             promoted->location = UNKNOWN_LOCATION;
-            __generatePawnPromotions(self, clone, promoted, RANK_FILE(rank+pawnDirection, file+dir));
+            __generatePawnPromotions(self, clone, promoted, 
+                RANK_FILE(rank+pawnDirection, file+dir));
         }
         else{
             //do normal capture
             clone = __getCleanBoard(self);
-            opSet = self->toPlay==WHITE?clone->blackPieces:clone->whitePieces;
+            opSet = self->toPlay==WHITE?
+                clone->blackPieces:clone->whitePieces;
             capture = clone->squares[
                 RANK_FILE(rank+pawnDirection, file+dir)];
             ChessPieceSet_remove(opSet, capture, clone);
@@ -324,10 +335,12 @@ void __generatePawnMoves(ChessMoveGenerator* self){
                 //generate promotions
                 clone = __getCleanBoard(self);
                 promoted = clone->squares[pawn->location];
-                set = self->toPlay==WHITE?clone->whitePieces:clone->blackPieces;
+                set = self->toPlay==WHITE?
+                    clone->whitePieces:clone->blackPieces;
                 ChessPieceSet_remove(set, promoted, clone);
                 promoted->location = UNKNOWN_LOCATION;
-                __generatePawnPromotions(self, clone, promoted, RANK_FILE(rank+pawnDirection, file));
+                __generatePawnPromotions(self, clone, promoted,
+                    RANK_FILE(rank+pawnDirection, file));
             }
             else{
                 //generate regular forward push
@@ -405,15 +418,38 @@ void __generateBishopMoves(ChessMoveGenerator* self){
     }
 }
 void __generateRookMoves(ChessMoveGenerator* self){
-    int i;
+    int flagsBackup = self->cloneTemplate->flags;
     int size = self->curSet->piecesCounts[TYPE_TO_INT(ROOK)];
+    int homeRank = self->toPlay==WHITE?0:7;
+    int i, rank, file;
     ChessPiece* rook;
     for(i=0;i<size;i++){
         rook = self->curSet->piecesByType[TYPE_TO_INT(ROOK)][i];
+        rank = GET_RANK(rook->location);
+        file = GET_FILE(rook->location);
+        if(rank==homeRank){
+            if(file==0){
+                if(self->toPlay==WHITE)
+                    self->cloneTemplate->flags&=
+                        ~WHITE_QUEEN_CASTLE_FLAG;
+                else
+                    self->cloneTemplate->flags&=
+                        ~BLACK_QUEEN_CASTLE_FLAG;
+            }
+            else if(file==7){
+                if(self->toPlay==WHITE)
+                    self->cloneTemplate->flags&=
+                        ~WHITE_KING_CASTLE_FLAG;
+                else
+                    self->cloneTemplate->flags&=
+                        ~BLACK_KING_CASTLE_FLAG;
+            }
+        }
         __generateDirectionalMoves(self, rook, 1, 0);
         __generateDirectionalMoves(self, rook, 0, 1);
         __generateDirectionalMoves(self, rook, -1, 0);
         __generateDirectionalMoves(self, rook, 0, -1);
+        self->cloneTemplate->flags = flagsBackup;
     }
 }
 void __generateQueenMoves(ChessMoveGenerator* self){
@@ -482,7 +518,15 @@ void __generateKnightMoves(ChessMoveGenerator* self){
     }
 }
 void __generateKingMoves(ChessMoveGenerator* self){
-    ChessPiece* king = self->curSet->piecesByType[TYPE_TO_INT(KING)][0];
+    ChessPiece* king = self->curSet->
+        piecesByType[TYPE_TO_INT(KING)][0];
+    int flagsBackup = self->cloneTemplate->flags;
+    if(self->toPlay==WHITE)
+        self->cloneTemplate->flags&=~
+            (WHITE_QUEEN_CASTLE_FLAG|WHITE_KING_CASTLE_FLAG);
+    else
+        self->cloneTemplate->flags&=~
+            (BLACK_QUEEN_CASTLE_FLAG|BLACK_KING_CASTLE_FLAG);
     __generateSimpleMove(self, king, -1, -1, 1);
     __generateSimpleMove(self, king, -1, 0, 1);
     __generateSimpleMove(self, king, -1, 1, 1);
@@ -491,4 +535,107 @@ void __generateKingMoves(ChessMoveGenerator* self){
     __generateSimpleMove(self, king, 1, -1, 1);
     __generateSimpleMove(self, king, 1, 0, 1);
     __generateSimpleMove(self, king, 1, 1, 1);
+    self->cloneTemplate->flags = flagsBackup;
+}
+void __generateEnPassant(ChessMoveGenerator* self){
+    if(!(self->currentBoard->flags&EN_PASSANT_FLAG))
+        return;
+    int file = (self->currentBoard->flags>>EN_PASSANT_FILE_OFFSET)&7;
+    int pawnDirection = self->toPlay==WHITE?1:-1;
+    int enPassantFromRank = self->toPlay==WHITE?4:3;
+    ChessBoard* clone;
+    ChessPiece* pawn;
+    if(file<7){
+        pawn = self->currentBoard->squares[
+            RANK_FILE(enPassantFromRank, file+1)];
+        if(pawn!=NULL && pawn->type==PAWN &&
+            pawn->color==self->toPlay){
+            clone = __getCleanBoard(self);
+            ChessBoard_quickRemoveByLoc(clone, 
+                RANK_FILE(enPassantFromRank, file));
+            ChessBoard_movePieceByLoc(clone,
+                pawn->location,
+                RANK_FILE(enPassantFromRank+pawnDirection, file));
+            __finalizeOrDelete(self, clone, 1);
+        }
+    }
+    if(file>0){
+        pawn = self->currentBoard->squares[
+            RANK_FILE(enPassantFromRank, file-1)];
+        if(pawn!=NULL && pawn->type==PAWN &&
+            pawn->color==self->toPlay){
+            clone = __getCleanBoard(self);
+            ChessBoard_quickRemoveByLoc(clone, 
+                RANK_FILE(enPassantFromRank, file));
+            ChessBoard_movePieceByLoc(clone,
+                pawn->location,
+                RANK_FILE(enPassantFromRank+pawnDirection, file));
+            __finalizeOrDelete(self, clone, 1);
+        }
+    }
+}
+void __generateCastlings(ChessMoveGenerator* self){
+    int flagsBackup = self->cloneTemplate->flags;
+    if(self->toPlay==WHITE)
+        self->cloneTemplate->flags&=~
+            (WHITE_QUEEN_CASTLE_FLAG|WHITE_KING_CASTLE_FLAG);
+    else
+        self->cloneTemplate->flags&=~
+            (BLACK_QUEEN_CASTLE_FLAG|BLACK_KING_CASTLE_FLAG);
+    ChessBoard* clone;
+    int homeRank = self->toPlay==WHITE?0:7;
+    int canKingCastle = 0, canQueenCastle = 0;
+    if(self->toPlay==WHITE){
+        if(self->currentBoard->flags&WHITE_KING_CASTLE_FLAG)
+            canKingCastle = 1;
+        if(self->currentBoard->flags&WHITE_QUEEN_CASTLE_FLAG)
+            canQueenCastle = 1;
+    }
+    else{
+        if(self->currentBoard->flags&BLACK_KING_CASTLE_FLAG)
+            canKingCastle = 1;
+        if(self->currentBoard->flags&BLACK_QUEEN_CASTLE_FLAG)
+            canQueenCastle = 1;
+    }
+    if(canKingCastle){
+        if((self->currentBoard->
+            squares[RANK_FILE(homeRank, 5)]==NULL)&&
+            (self->currentBoard->
+            squares[RANK_FILE(homeRank, 6)]==NULL)){
+            clone = __getCleanBoard(self);
+            ChessBoard_movePieceByLoc(clone,
+                RANK_FILE(homeRank,4), RANK_FILE(homeRank,5));
+            if(__testForCheck(clone, self->toPlay))
+                ChessBoard_delete(clone);
+            else{
+                ChessBoard_movePieceByLoc(clone,
+                    RANK_FILE(homeRank,5), RANK_FILE(homeRank,6));
+                ChessBoard_movePieceByLoc(clone,
+                    RANK_FILE(homeRank,7), RANK_FILE(homeRank,5));
+                __finalizeOrDelete(self, clone, 1);
+            }
+        }
+    }
+    if(canQueenCastle){
+        if((self->currentBoard->
+            squares[RANK_FILE(homeRank, 3)]==NULL)&&
+            (self->currentBoard->
+            squares[RANK_FILE(homeRank, 2)]==NULL)&&
+            (self->currentBoard->
+            squares[RANK_FILE(homeRank, 1)]==NULL)){
+            clone = __getCleanBoard(self);
+            ChessBoard_movePieceByLoc(clone,
+                RANK_FILE(homeRank,4), RANK_FILE(homeRank,3));
+            if(__testForCheck(clone, self->toPlay))
+                ChessBoard_delete(clone);
+            else{
+                ChessBoard_movePieceByLoc(clone,
+                    RANK_FILE(homeRank,3), RANK_FILE(homeRank,2));
+                ChessBoard_movePieceByLoc(clone,
+                    RANK_FILE(homeRank,0), RANK_FILE(homeRank,3));
+                __finalizeOrDelete(self, clone, 1);
+            }
+        }
+    }
+    self->cloneTemplate->flags = flagsBackup;
 }

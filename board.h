@@ -84,7 +84,6 @@ void ChessBoard_movePieceByLoc(ChessBoard* self, location_t from,
     location_t to);
 ChessBoard* ChessBoard_clone(ChessBoard* self);
 void ChessBoard_toggleToPlay(ChessBoard* self);
-void ChessBoard_unsetCastleFlag(ChessBoard* self, flag_t flag);
 void ChessBoard_setEnPassantFlags(ChessBoard* self, int file);
 void ChessBoard_clearEnPassantFlags(ChessBoard* self);
 void ChessBoard_print(ChessBoard* self);
