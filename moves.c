@@ -565,6 +565,15 @@ void __generateEnPassant(ChessMoveGenerator* self){
         if(pawn!=NULL && pawn->type==PAWN &&
             pawn->color==self->toPlay){
             clone = __getCleanBoard(self);
+            //debugging
+            if(clone->squares[RANK_FILE(enPassantFromRank, file)]
+                ==NULL){
+                printf("%d, %d\n", enPassantFromRank, file);
+                ChessBoard_print(self->currentBoard->previous);
+                printf("\n");
+                ChessBoard_print(self->currentBoard);
+            }
+            //end debugging
             ChessBoard_quickRemoveByLoc(clone, 
                 RANK_FILE(enPassantFromRank, file));
             ChessBoard_movePieceByLoc(clone,

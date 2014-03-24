@@ -292,6 +292,8 @@ void ChessBoard_clearEnPassantFlags(ChessBoard* self){
         int file = (self->flags>>EN_PASSANT_FILE_OFFSET)&7;
         zob_hash_t hash = ZOBRIST_TABLE[file+ZOB_EN_PASSANT_START];
         self->hash^=hash;
+        self->flags&=~EN_PASSANT_FLAG;
+        self->flags&=~(7<<EN_PASSANT_FILE_OFFSET);
     }
 }
 void ChessBoard_quickRemoveByLoc(ChessBoard* self, location_t loc){

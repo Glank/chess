@@ -6,6 +6,11 @@
 #include "moves.h"
 #define LOC(str) ((str[1]-'1')<<3)+((str[0]-'a'))
 
+/**
+ * See:
+ * http://chessprogramming.wikispaces.com/Perft
+ * http://chessprogramming.wikispaces.com/Perft+Results
+ **/
 unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen, 
     int depth){
     int i;
@@ -15,10 +20,13 @@ unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen,
     if(start->nextCount==0){
         if(start->flags&TO_PLAY_FLAG && 
             start->flags&WHITE_IN_CHECK_FLAG)
-            printf("Checkmate");
-        if(!(start->flags&TO_PLAY_FLAG) && 
+            printf("Checkmate\n");
+        else if(!(start->flags&TO_PLAY_FLAG) && 
             start->flags&BLACK_IN_CHECK_FLAG)
-            printf("Checkmate");
+            printf("Checkmate\n");
+        else
+            printf("Stalemate\n");
+        ChessBoard_print(start);
     }
     if(depth==0){
         ChessBoard_deleteAllNext(start);
@@ -38,7 +46,7 @@ int main(void){
     printf("%d\n", (int)board->hash);
     ChessBoard_print(board);
 
-    printf("%d\n", perft(board, gen, 3));
+    printf("%lu\n", perft(board, gen, 4));
 
     /*
     int i;
