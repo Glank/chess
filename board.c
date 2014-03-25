@@ -5,56 +5,41 @@
 #include "board.h"
 
 ChessPiece* ChessPiece_new(color_e color, pieceType_e type){
-    ChessPiece* ret = (ChessPiece*)malloc(sizeof(ChessPiece));
-    ret->location = UNKNOWN_LOCATION;
-    ret->color = color;
-    ret->type = type;
-    return ret;
+    ChessPiece* self = (ChessPiece*)malloc(sizeof(ChessPiece));
+    self->location = UNKNOWN_LOCATION;
+    self->color = color;
+    self->type = type;
+    return self;
 }
 void ChessPiece_delete(ChessPiece* self){
     free(self);
 }
-ChessPiece* _ChessPiece_clone(ChessPiece* self){
-    assert(self!=NULL);
-    ChessPiece* clone = (ChessPiece*)malloc(sizeof(ChessPiece));
-    clone->location = self->location;
-    clone->color = self->color;
-    clone->type = self->type;
-    return clone;
-}
-char ChessPiece_getChar(ChessPiece* self){
+//get a single character representing this piece
+char __getPieceChar(ChessPiece* self){
     char table[] = "KkQqRrNnBbPp";
     int i = TYPE_COLOR_TO_INT(self->type, self->color);
     return table[i];
 }
-int ChessPiece_getZobristID(ChessPiece* self){
+//get a unique integer index in the ZOBRIST_TABLE
+int __getZobristID(ChessPiece* self){
     int i = TYPE_COLOR_TO_INT(self->type, self->color);
     i=(i<<6)+(int)self->location;
     return i;
 }
 
-void ChessPieceSet_initSide(ChessBoard* board, color_e color){
-    ChessPieceSet* set = (ChessPieceSet*)malloc(sizeof(ChessPieceSet));
+void __initSide(ChessBoard* board, color_e color){
+    ChessPieceSet* set = ChessPieceSet_new();
     int backRank, pawnRank;
+    board->pieceSets[(int)color] = set;
     if(color==WHITE){
-        assert(board->whitePieces==NULL);
-        board->whitePieces = set;
         backRank = 0;
         pawnRank = 1;
     }
     else{
         assert(color==BLACK);
-        assert(board->blackPieces==NULL);
-        board->blackPieces = set;
         backRank = 7;
         pawnRank = 6;
     }
-    int i;
-    //start with an empty set
-    for(i = 0; i<6; i++)
-        set->piecesCounts[i] = 0;
-        set->piecesByType[i] = NULL;
-    
     //order of back rank
     pieceType_e backRankOrder[] = {
         ROOK, KNIGHT, BISHOP, QUEEN, 
@@ -62,90 +47,58 @@ void ChessPieceSet_initSide(ChessBoard* board, color_e color){
     };
     //init all the pieces
     for(i = 0; i<8; i++){
-        ChessPieceSet_add(set, ChessPiece_new(color, backRankOrder[i]),
-            board, RANK_FILE(backRank,i));
+        ChessPieceSet_add(board, set, 
+            ChessPiece_new(color, backRankOrder[i]),
+            RANK_FILE(backRank,i));
     }
     for(i = 0; i < 8; i++){
-        ChessPieceSet_add(set, ChessPiece_new(color, PAWN),
+        ChessPieceSet_add(board, set, 
+            ChessPiece_new(color, PAWN),
             board, RANK_FILE(pawnRank,i));
     }
 }
-void ChessPieceSet_add(ChessPieceSet* self, ChessPiece* piece,
-    ChessBoard* board, location_t loc){
-    assert(piece!=NULL);
-    assert(board!=NULL);
-    assert(loc!=UNKNOWN_LOCATION);
-    int type, size, oldSize;
-    ChessPiece** oldArray;
-    type = TYPE_TO_INT(piece->type);
-    oldArray = self->piecesByType[type];
-    oldSize = self->piecesCounts[type];
-    size = oldSize+1;
-    self->piecesByType[type] = (ChessPiece**)malloc(
-        sizeof(ChessPiece*)*size);
-    self->piecesCounts[type] = size;
-    if(size!=1){
-        memcpy(self->piecesByType[type], oldArray, 
-            sizeof(ChessPiece*)*(oldSize));
-        free(oldArray);
+ChessPieceSet* ChessPieceSet_new(){
+    ChessPieceSet* self = (ChessPieceSet*)malloc(sizeof(ChessPieceSet));
+    int i,maxCount;
+    //start with an empty set
+    for(i = 0; i<6; i++){
+        self->piecesCounts[i] = 0;
+        if(i==TYPE_TO_INT(KING))
+            maxCount=1;
+        else if(i==TYPE_TO_INT(PAWN))
+            maxCount=8;
+        else
+            maxCount=10;
+        self->piecesByType[i] = (ChessPiece**)malloc(
+            sizeof(ChessPiece*)*maxCount);
     }
-    self->piecesByType[type][oldSize] = piece;
-    ChessBoard_setPiece(board, piece, loc);
-}
-void _ChessPieceSet_clone(ChessPieceSet* self, ChessBoard* on){
-    ChessPieceSet* clone = (ChessPieceSet*)malloc(
-        sizeof(ChessPieceSet));
-    if(self->piecesByType[0][0]->color==WHITE)
-        on->whitePieces = clone;
-    else
-        on->blackPieces = clone;
-    int type, i, size;
-    ChessPiece* oldPiece;
-    for(type = 0; type<6; type++){
-        size = self->piecesCounts[type];
-        clone->piecesCounts[type] = size;
-        clone->piecesByType[type] = (ChessPiece**)malloc(
-            sizeof(ChessPiece*)*size);
-        for(i = 0; i < size; i++){
-            oldPiece = self->piecesByType[type][i];
-            clone->piecesByType[type][i] = 
-                on->squares[oldPiece->location];
-        }
-    }
-}
-void ChessPieceSet_remove(ChessPieceSet* self, ChessPiece* piece,
-    ChessBoard* board){
-    int type, size, i;
-    type = TYPE_TO_INT(piece->type);
-    size = self->piecesCounts[type];
-    //fine the piece in the list of that type
-    for(i=0; i<size; i++)
-        if(self->piecesByType[type][i]==piece)
-            break;
-    assert(i<size);
-    ChessPiece** oldArray = self->piecesByType[type];
-    self->piecesByType[type] = (ChessPiece**)malloc(
-        sizeof(ChessPiece*)*(size-1));
-    memcpy(self->piecesByType[type], oldArray, 
-        sizeof(ChessPiece*)*i);
-    memcpy(self->piecesByType[type]+i, oldArray+i+1, 
-        sizeof(ChessPiece*)*(size-i-1));
-    self->piecesCounts[type]--;
-    free(oldArray);
-    ChessBoard_removePiece(board, piece);
+    return self;
 }
 void ChessPieceSet_delete(ChessPieceSet* self){
-    int i,j;
-    for(i=0; i<6; i++){
-        if(self->piecesByType[i]!=NULL){
-            for(j=0; j<self->piecesCounts[i]; j++){
-                assert(self->piecesByType[i][j]!=NULL);
-                ChessPiece_delete(self->piecesByType[i][j]);
-            }
-            free(self->piecesByType[i]);
-        }
-    }
+    int i;
+    for(i=0; i<6; i++)
+        free(self->piecesByType[i]);
     free(self);
+}
+
+void __addPiece(ChessBoard* board, ChessPieceSet* set, 
+    ChessPiece* piece, location_t loc){
+    assert(piece!=NULL);
+    assert(board!=NULL);
+    assert(set!=NULL);
+    assert(loc!=UNKNOWN_LOCATION);
+    int type = TYPE_TO_INT(piece->type);
+    int* count = (set->piecesCounts[type])&;
+    self->piecesByType[(*count)++] = piece;
+}
+void __removePiece(ChessBoard* board, ChessPieceSet* set,
+    ChessPiece* piece){
+    int type = TYPE_TO_INT(piece->type);
+    int* count = (set->piecesCounts[type])&;
+    int i;
+    for(i=0; set->piecesByType[type]!=piece; i++);
+    for(i++;i<*count;i++)
+        set->piecesByCounts[i-1]=set->piecesByCounts[i];
 }
 
 ChessBoard* ChessBoard_new(){

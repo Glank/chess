@@ -4,7 +4,6 @@
 #include "zobrist.h"
 typedef struct ChessPiece ChessPiece;
 typedef struct ChessPieceSet ChessPieceSet;
-typedef struct ChessPieceSetNode ChessPieceSetNode;
 typedef struct ChessBoard ChessBoard;
 typedef uint8_t location_t;
 #define UNKNOWN_LOCATION 255
@@ -12,15 +11,15 @@ typedef uint8_t location_t;
 #define GET_RANK(loc) ((loc)>>3)
 #define GET_FILE(loc) ((loc)&7)
 typedef uint16_t flag_t;
-#define WHITE_KING_CASTLE_FLAG 1
-#define WHITE_QUEEN_CASTLE_FLAG 2
-#define BLACK_KING_CASTLE_FLAG 4
-#define BLACK_QUEEN_CASTLE_FLAG 8
-#define EN_PASSANT_FLAG 16
+#define WHITE_KING_CASTLE_FLAG 0x001
+#define WHITE_QUEEN_CASTLE_FLAG 0x002
+#define BLACK_KING_CASTLE_FLAG 0x004
+#define BLACK_QUEEN_CASTLE_FLAG 0x008
+#define EN_PASSANT_FLAG 0x010
 #define EN_PASSANT_FILE_OFFSET 5
-#define TO_PLAY_FLAG 1024
-#define WHITE_IN_CHECK_FLAG 256
-#define BLACK_IN_CHECK_FLAG 512
+#define TO_PLAY_FLAG 0x400
+#define WHITE_IN_CHECK_FLAG 0x100
+#define BLACK_IN_CHECK_FLAG 0x200
 typedef enum {WHITE=0, BLACK=1} color_e;
 #define OTHER_COLOR(c) ((color_e)(((int)(c))^1))
 typedef enum {
@@ -28,63 +27,57 @@ typedef enum {
 } pieceType_e;
 #define TYPE_TO_INT(type) (((int)(type))>>1)
 #define TYPE_COLOR_TO_INT(type,color) (((int)(type))+((int)(color)))
+typedef uint16_t move_t;
+#define NEW_MOVE(from,to) ((from<<6)|to)
+//encoding for a chess move is specified here:
+//https://chessprogramming.wikispaces.com/Encoding+Moves
+//first 2 bits are the capture and pawn promotion flags,
+//the next 2 bits are used in conjunction with the first two
+//to identify the special move type,
+//next 6 are the from location,
+//last 6 are the to location
+#define CAPTURE_MOVE_FLAG 0x4000
+#define PROMOTION_MOVE_FLAG 0x8000
+//special moves
+#define DOUBLE_PAWN_PUSH_MOVE 0x1000
+#define KING_CASTLE_MOVE 0x2000
+#define QUEEN_CASTLE_MOVE 0x3000
+#define EN_PASSANT_MOVE 0x5000
+//promotion types (must recognize flags first)
+#define KNIGHT_PROMOTION 0x0000
+#define BISHOP_PROMOTION 0x1000
+#define ROOK_PROMOTION 0x2000
+#define QUEEN_PROMOTION 0x3000
 
 struct ChessPiece{
     location_t location;
     color_e color;
     pieceType_e type;
 };
-ChessPiece* ChessPiece_new(
-    color_e color,
-    pieceType_e type
-);
-//warning, does not remove from square
-void ChessPiece_delete(ChessPiece* self);
-char ChessPiece_getChar(ChessPiece* self);
-int ChessPiece_getZobristID(ChessPiece* self);
 
+//This structure should act only as an index
+//to help accelerate operations done by ChessBoard.
+//It should not be interfaced with by anything outside of
+//board.c
 struct ChessPieceSet{
     ChessPiece** piecesByType[6];
     int piecesCounts[6];
 };
-//create new sets and add them to the board
-// that includes putting the pieces on the correct squares
-void ChessPieceSet_initSide(ChessBoard* board, color_e color);
-//adds a piece to the set and the board
-void ChessPieceSet_add(ChessPieceSet* self, ChessPiece* piece,
-    ChessBoard* board, location_t loc);
-//removes a piece from the set and the board but does not free it.
-void ChessPieceSet_remove(ChessPieceSet* self, ChessPiece* piece,
-    ChessBoard* board);
-//frees the set and *all of it's pieces*
-void ChessPieceSet_delete(ChessPieceSet* set);
 
 struct ChessBoard{
-    ChessBoard* previous;
-    ChessBoard** next;
-    int nextCount;
+    move_t* moves;
+    int movesCount;
+    ChessPiece* captured[30];
+    int capturedCount;
     ChessPiece* squares[64];
-    ChessPieceSet* whitePieces;
-    ChessPieceSet* blackPieces;
+    ChessPieceSet** pieceSets;
     flag_t flags;
     zob_hash_t hash;
 };
 ChessBoard* ChessBoard_new();
-//frees everything except previous and next
 void ChessBoard_delete(ChessBoard* self);
-//recursively delete next and all of it's children if they exist
-void ChessBoard_deleteAllNext(ChessBoard* self);
-void ChessBoard_setPiece(ChessBoard* self, 
-    ChessPiece* piece, location_t loc);
-void ChessBoard_removePiece(ChessBoard* self, ChessPiece* piece);
-void ChessBoard_quickRemoveByLoc(ChessBoard* self, location_t loc);
-void ChessBoard_movePiece(ChessBoard* self, ChessPiece* piece,
-    location_t loc);
-void ChessBoard_movePieceByLoc(ChessBoard* self, location_t from,
-    location_t to);
-ChessBoard* ChessBoard_clone(ChessBoard* self);
-void ChessBoard_toggleToPlay(ChessBoard* self);
-void ChessBoard_setEnPassantFlags(ChessBoard* self, int file);
-void ChessBoard_clearEnPassantFlags(ChessBoard* self);
+void ChessBoard_setUp(ChessBoard* self);
+void ChessBoard_makeMove(ChessBoard* self, move_t move);
+void ChessBoard_unmakeMove(ChessBoard* self);
 void ChessBoard_print(ChessBoard* self);
 #endif
