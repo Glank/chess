@@ -11,6 +11,7 @@
  * http://chessprogramming.wikispaces.com/Perft
  * http://chessprogramming.wikispaces.com/Perft+Results
  **/
+/*
 unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen, 
     int depth){
     int i;
@@ -37,16 +38,17 @@ unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen,
     ChessBoard_deleteAllNext(start);
     return nodes;
 }
+*/
 
 int main(void){
     initZobrist();
     ChessBoard* board = ChessBoard_new();
-    ChessMoveGenerator* gen = ChessMoveGenerator_new();
+    ChessBoard_setUp(board);
 
     printf("%d\n", (int)board->hash);
     ChessBoard_print(board);
 
-    printf("%lu\n", perft(board, gen, 4));
+    //printf("%lu\n", perft(board, gen, 4));
 
     /*
     int i;
@@ -58,8 +60,8 @@ int main(void){
     }
     //*/
 
-    ChessMoveGenerator_delete(gen);
-    ChessBoard_deleteAllNext(board);
+    //ChessMoveGenerator_delete(gen);
+    //ChessBoard_deleteAllNext(board);
     ChessBoard_delete(board);
     closeZobrist();
     return 0;

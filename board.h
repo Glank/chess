@@ -48,6 +48,9 @@ typedef uint16_t move_t;
 #define BISHOP_PROMOTION 0x1000
 #define ROOK_PROMOTION 0x2000
 #define QUEEN_PROMOTION 0x3000
+//some max constants arbitrarily set
+#define MAX_MOVES 1024
+#define MAX_CAPTURES 30
 
 struct ChessPiece{
     location_t location;
@@ -65,12 +68,12 @@ struct ChessPieceSet{
 };
 
 struct ChessBoard{
-    move_t* moves;
+    move_t moves[MAX_MOVES];
     int movesCount;
-    ChessPiece* captured[30];
+    ChessPiece* captured[MAX_CAPTURES];
     int capturedCount;
     ChessPiece* squares[64];
-    ChessPieceSet** pieceSets;
+    ChessPieceSet* pieceSets[2];
     flag_t flags;
     zob_hash_t hash;
 };

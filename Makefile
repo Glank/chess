@@ -1,5 +1,6 @@
 CFLAGS=-Wall -g
-OBJS=board.o zobrist.o moves.o ll
+OBJS=board.o zobrist.o moves.o
+TEST_OBJS=board.o zobrist.o
 
 all:    test	
 
@@ -12,10 +13,10 @@ zobrist.o: zobrist.h zobrist.c
 board.o: board.h board.c zobrist.h
 	$(CC) $(CFLAGS) -c board.c
 
-test: $(OBJS) test.c
+test: $(TEST_OBJS) test.c
 	$(CC) $(CFLAGS) -c test.c
-	$(CC) $(CFLAGS) $(OBJS) test.o -o test
+	$(CC) $(CFLAGS) $(TEST_OBJS) test.o -o test
 	valgrind --leak-check=full ./test
 
 clean:
-	rm -f *.o chess_test
+	rm -f *.o test
