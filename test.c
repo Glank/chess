@@ -4,7 +4,7 @@
 #include "board.h"
 #include "zobrist.h"
 #include "moves.h"
-#define LOC(str) ((str[1]-'1')<<3)+((str[0]-'a'))
+#define LOC(str) (((str[1]-'1')<<3)+((str[0]-'a')))
 
 /**
  * See:
@@ -45,7 +45,23 @@ int main(void){
     ChessBoard* board = ChessBoard_new();
     ChessBoard_setUp(board);
 
-    printf("%d\n", (int)board->hash);
+    move_t move = NEW_MOVE(LOC("d2"),LOC("d3"));
+    ChessBoard_makeMove(board, move);
+    move = NEW_MOVE(LOC("e7"),LOC("e5"));
+    move|=DOUBLE_PAWN_PUSH_MOVE;
+    ChessBoard_makeMove(board, move);
+    move = NEW_MOVE(LOC("d3"),LOC("d4"));
+    ChessBoard_makeMove(board, move);
+    move = NEW_MOVE(LOC("e5"),LOC("d4"));
+    move|=CAPTURE_MOVE_FLAG;
+    ChessBoard_makeMove(board, move);
+    move = NEW_MOVE(LOC("e2"),LOC("e4"));
+    move|=DOUBLE_PAWN_PUSH_MOVE;
+    ChessBoard_makeMove(board, move);
+    move = NEW_MOVE(LOC("d4"),LOC("e3"));
+    move|=EN_PASSANT_MOVE;
+    ChessBoard_makeMove(board, move);
+
     ChessBoard_print(board);
 
     //printf("%lu\n", perft(board, gen, 4));

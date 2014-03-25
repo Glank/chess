@@ -29,6 +29,9 @@ typedef enum {
 #define TYPE_COLOR_TO_INT(type,color) (((int)(type))+((int)(color)))
 typedef uint16_t move_t;
 #define NEW_MOVE(from,to) ((from<<6)|to)
+#define GET_FROM(move) ((move>>6)&63)
+#define GET_TO(move) (move&63)
+#define GET_META(move) (move&0xF000)
 //encoding for a chess move is specified here:
 //https://chessprogramming.wikispaces.com/Encoding+Moves
 //first 2 bits are the capture and pawn promotion flags,
@@ -48,6 +51,7 @@ typedef uint16_t move_t;
 #define BISHOP_PROMOTION 0x1000
 #define ROOK_PROMOTION 0x2000
 #define QUEEN_PROMOTION 0x3000
+#define PROMOTION_MASK 0x3000
 //some max constants arbitrarily set
 #define MAX_MOVES 1024
 #define MAX_CAPTURES 30
@@ -69,6 +73,8 @@ struct ChessPieceSet{
 
 struct ChessBoard{
     move_t moves[MAX_MOVES];
+    flag_t prevFlags[MAX_MOVES];
+    zob_hash_t prevHashes[MAX_MOVES];
     int movesCount;
     ChessPiece* captured[MAX_CAPTURES];
     int capturedCount;

@@ -6,6 +6,12 @@
 
 
 void __addPiece(ChessBoard* board, ChessPiece* piece);
+void __movePieceByLoc(ChessBoard* self, location_t from,
+    location_t to);
+void __setEnPassantFlags(ChessBoard* self, int file);
+void __clearEnPassantFlags(ChessBoard* self);
+void __unsetCastleFlag(ChessBoard* self, flag_t flag);
+void __toggleToPlay(ChessBoard* self);
 
 ChessPiece* ChessPiece_new(color_e color, pieceType_e type,
     location_t location){
@@ -156,6 +162,71 @@ void ChessBoard_delete(ChessBoard* self){
     //free everything else
     free(self);
 }
+void ChessBoard_makeMove(ChessBoard* self, move_t move){
+    //push the move onto the move stack
+    self->prevHashes[self->movesCount] = self->hash;
+    self->prevFlags[self->movesCount] = self->flags;
+    self->moves[self->movesCount++] = move;
+    __toggleToPlay(self);
+    __clearEnPassantFlags(self);
+    int meta = GET_META(move);
+    location_t from = GET_FROM(move);
+    location_t to = GET_TO(move);
+    int rank, file;
+    //do special moves
+    switch(meta){
+    case DOUBLE_PAWN_PUSH_MOVE:
+        __setEnPassantFlags(self, GET_FILE(to));
+        break;
+    case KING_CASTLE_MOVE:
+    case QUEEN_CASTLE_MOVE:
+        rank = GET_RANK(from);
+        if(meta==KING_CASTLE_MOVE)
+            __movePieceByLoc(self, 
+                RANK_FILE(rank, 7), RANK_FILE(rank, 5));
+        else
+            __movePieceByLoc(self, 
+                RANK_FILE(rank, 0), RANK_FILE(rank, 3));
+        if(rank==0){//white
+            __unsetCastleFlag(self, WHITE_KING_CASTLE_FLAG);
+            __unsetCastleFlag(self, WHITE_QUEEN_CASTLE_FLAG);
+        }
+        else{//black
+            __unsetCastleFlag(self, BLACK_KING_CASTLE_FLAG);
+            __unsetCastleFlag(self, BLACK_QUEEN_CASTLE_FLAG);
+        }
+        break;
+    case EN_PASSANT_MOVE:
+        rank = GET_RANK(from);
+        file = GET_FILE(to);
+        __capturePiece(self, 
+            self->squares[RANK_FILE(rank,file)]);
+        break;
+    default:
+        if(meta&CAPTURE_MOVE_FLAG)
+            __capturePiece(self, self->squares[to]);
+        if(meta&PROMOTION_MOVE_FLAG){
+            ChessPiece* piece = self->squares[from];
+            switch(meta&PROMOTION_MASK){
+            case QUEEN_PROMOTION:
+                piece->type=QUEEN;
+                break;
+            case ROOK_PROMOTION:
+                piece->type=ROOK;
+                break;
+            case KNIGHT_PROMOTION:
+                piece->type=KNIGHT;
+                break;
+            case BISHOP_PROMOTION:
+                piece->type=BISHOP;
+                break;
+            default:
+                assert(0);
+            }
+        }
+    }
+    __movePieceByLoc(self, GET_FROM(move), GET_TO(move));
+}
 char __getChar(ChessBoard* self, location_t loc){
     assert(self!=NULL);
     assert(0<=loc);
@@ -219,7 +290,7 @@ void __clearEnPassantFlags(ChessBoard* self){
     }
 }
 void __setEnPassantFlags(ChessBoard* self, int file){
-    __clearEnPassantFlags(self);
+    assert(!(self->flags&EN_PASSANT_FLAG));
     self->flags = self->flags|(file<<EN_PASSANT_FILE_OFFSET)|
         EN_PASSANT_FLAG;
     zob_hash_t hash = ZOBRIST_TABLE[file+ZOB_EN_PASSANT_START];
@@ -261,13 +332,19 @@ void ChessBoard_print(ChessBoard* self){
         printf("En passant flags set '%c' file.\n",
             (char)('a'+file));
     }
+    printf("Flags: %x\n", self->flags);
     printf("Hash: %x\n", self->hash);
     printf("Moves:\n");
     int i;
-    for(i = 0; i < self->movesCount; i++)
-        printf("%d)\t%x\n",i,self->moves[i]); 
+    for(i = 0; i < self->movesCount; i++){
+        printf("%d)\t", i);
+        printf("Move:%x\t", self->moves[i]);
+        printf("Prev Flags:%x\t", self->prevFlags[i]);
+        printf("Prev Hash:%x\n",  self->prevHashes[i]);
+    }
     printf("Captured Stack:\n");
-    for(i = 0; i < self->capturedCount; i++)
-        printf("%d)\t%x\n",i,
+    for(i = 0; i < self->capturedCount; i++){
+        printf("%d)\t%c\n",i,
             __getPieceChar(self->captured[i])); 
+    }
 }
