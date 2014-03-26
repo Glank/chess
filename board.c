@@ -102,7 +102,7 @@ void __addPiece(ChessBoard* board, ChessPiece* piece){
     zob_hash_t hash = ZOBRIST_TABLE[__getZobristID(piece)];
     board->hash^=hash;
 }
-void __capturePiece(ChessBoard* board, ChessPiece* piece){
+void __removePiece(ChessBoard* board, ChessPiece* piece){
     ChessPieceSet* set = board->pieceSets[(int)(piece->color)];
     int type = TYPE_TO_INT(piece->type);
     int* count = &(set->piecesCounts[type]);
@@ -110,13 +110,21 @@ void __capturePiece(ChessBoard* board, ChessPiece* piece){
     for(i=0; set->piecesByType[type][i]!=piece; i++);
     for(i++;i<*count;i++)
         set->piecesByType[type][i-1]=set->piecesByType[type][i];
+    (*count)--;
     assert(board->squares[piece->location]==piece);
     board->squares[piece->location] = NULL;
-    assert(board->capturedCount<MAX_CAPTURES);
-    board->captured[board->capturedCount] = piece;
-    board->capturedCount++;
     zob_hash_t hash = ZOBRIST_TABLE[__getZobristID(piece)];
     board->hash^=hash;
+}
+void __capturePiece(ChessBoard* board, ChessPiece* piece){
+    __removePiece(board, piece);
+    assert(board->capturedCount<MAX_CAPTURES);
+    board->captured[(board->capturedCount)++] = piece;
+}
+void __uncapturePiece(ChessBoard* board){
+    assert(board->capturedCount>0);
+    ChessPiece* piece = board->captured[--(board->capturedCount)];
+    __addPiece(board, piece);
 }
 
 ChessBoard* ChessBoard_new(){
@@ -207,6 +215,7 @@ void ChessBoard_makeMove(ChessBoard* self, move_t move){
             __capturePiece(self, self->squares[to]);
         if(meta&PROMOTION_MOVE_FLAG){
             ChessPiece* piece = self->squares[from];
+            __removePiece(self, piece);
             switch(meta&PROMOTION_MASK){
             case QUEEN_PROMOTION:
                 piece->type=QUEEN;
@@ -223,9 +232,46 @@ void ChessBoard_makeMove(ChessBoard* self, move_t move){
             default:
                 assert(0);
             }
+            __addPiece(self, piece);
         }
     }
-    __movePieceByLoc(self, GET_FROM(move), GET_TO(move));
+    __movePieceByLoc(self, from, to);
+}
+move_t ChessBoard_unmakeMove(ChessBoard* self){
+    assert(self->movesCount!=0);
+    move_t move = self->moves[self->movesCount-1];
+    flag_t prevFlags = self->prevFlags[self->movesCount-1];
+    zob_hash_t prevHash = self->prevHashes[--(self->movesCount)];
+    int meta = GET_META(move);
+    location_t from = GET_FROM(move);
+    location_t to = GET_TO(move);
+    //unmove the key piece
+    __movePieceByLoc(self, to, from);
+    //unpromote pawn
+    if(meta&PROMOTION_MOVE_FLAG){
+        ChessPiece* piece = self->squares[from];
+        __removePiece(self, piece);
+        piece->type=PAWN;
+        __addPiece(self, piece);
+    } 
+    //uncapture piece
+    if(meta&CAPTURE_MOVE_FLAG)
+        __uncapturePiece(self);
+    //uncastle
+    else if(meta==KING_CASTLE_MOVE){
+        int rank = GET_RANK(from);
+        __movePieceByLoc(self, 
+            RANK_FILE(rank, 5), RANK_FILE(rank, 7));
+    }
+    else if(meta==QUEEN_CASTLE_MOVE){
+        int rank = GET_RANK(from);
+        __movePieceByLoc(self, 
+            RANK_FILE(rank, 3), RANK_FILE(rank, 0));
+    }
+    //restore flags and hash
+    self->flags = prevFlags;
+    self->hash = prevHash;
+    return move;
 }
 char __getChar(ChessBoard* self, location_t loc){
     assert(self!=NULL);
@@ -347,4 +393,10 @@ void ChessBoard_print(ChessBoard* self){
         printf("%d)\t%c\n",i,
             __getPieceChar(self->captured[i])); 
     }
+    printf("White Set:\n");
+    for(i = 0; i < 6; i++)
+        printf("%d)\t%d\n", i, self->pieceSets[0]->piecesCounts[i]);
+    printf("Black Set:\n");
+    for(i = 0; i < 6; i++)
+        printf("%d)\t%d\n", i, self->pieceSets[1]->piecesCounts[i]);
 }

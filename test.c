@@ -61,6 +61,9 @@ int main(void){
     move = NEW_MOVE(LOC("d4"),LOC("e3"));
     move|=EN_PASSANT_MOVE;
     ChessBoard_makeMove(board, move);
+    int i;
+    for(i = 0; i < 6; i++)
+        ChessBoard_unmakeMove(board);
 
     ChessBoard_print(board);
 

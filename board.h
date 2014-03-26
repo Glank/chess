@@ -87,6 +87,6 @@ ChessBoard* ChessBoard_new();
 void ChessBoard_delete(ChessBoard* self);
 void ChessBoard_setUp(ChessBoard* self);
 void ChessBoard_makeMove(ChessBoard* self, move_t move);
-void ChessBoard_unmakeMove(ChessBoard* self);
+move_t ChessBoard_unmakeMove(ChessBoard* self);
 void ChessBoard_print(ChessBoard* self);
 #endif
