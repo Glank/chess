@@ -18,8 +18,6 @@ typedef uint16_t flag_t;
 #define EN_PASSANT_FLAG 0x010
 #define EN_PASSANT_FILE_OFFSET 5
 #define TO_PLAY_FLAG 0x400
-#define WHITE_IN_CHECK_FLAG 0x100
-#define BLACK_IN_CHECK_FLAG 0x200
 typedef enum {WHITE=0, BLACK=1} color_e;
 #define OTHER_COLOR(c) ((color_e)(((int)(c))^1))
 typedef enum {

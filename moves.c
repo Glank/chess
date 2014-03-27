@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 #include "moves.h"
 
 void __initIterValues(ChessMoveGenerator* self);
@@ -28,79 +30,55 @@ int __finalizeOrDelete(ChessMoveGenerator* self,
     ChessBoard* board, int validate);
 int __testForCheck(ChessBoard* board, color_e color);
 ChessBoard* __getCleanBoard(ChessMoveGenerator* self);
-void __finish(ChessMoveGenerator* self);
+void __finish(ChessMoveGenerator* self,
+    move_t** to, int* toCount);
 
 ChessMoveGenerator* ChessMoveGenerator_new(){
     ChessMoveGenerator* self = (ChessMoveGenerator*)
         malloc(sizeof(ChessMoveGenerator));
-    self->tempNext = (ChessBoard**)malloc(
-        sizeof(ChessBoard*)*MOVE_GEN_MAX_ALLOCATED);
-    self->tempNextFilled = 0;
-    self->cloneTemplate = NULL;
+    self->nextCount = 0;
     return self;
 }
 
 void ChessMoveGenerator_delete(ChessMoveGenerator* self){
-    free(self->tempNext);
     free(self);
 }
 
 void ChessMoveGenerator_generateMoves(
-    ChessMoveGenerator* self, ChessBoard* from){
+    ChessMoveGenerator* self, ChessBoard* from,
+    move_t** to, int* toCount){
     self->currentBoard = from;
     __initIterValues(self);
     __generatePawnMoves(self);
-    __generateBishopMoves(self);
-    __generateKnightMoves(self);
-    __generateRookMoves(self);
-    __generateQueenMoves(self);
-    __generateKingMoves(self);
-    __generateEnPassant(self);
-    __generateCastlings(self);
-    __finish(self);
-    
+    //__generateBishopMoves(self);
+    //__generateKnightMoves(self);
+    //__generateRookMoves(self);
+    //__generateQueenMoves(self);
+    //__generateKingMoves(self);
+    //__generateEnPassant(self);
+    //__generateCastlings(self);
+    //__finish(self, to, toCount);
 }
 
-void __finish(ChessMoveGenerator* self){
-    int i;
-    self->currentBoard->nextCount = self->tempNextFilled;
-    self->currentBoard->next = (ChessBoard**)malloc(
-        sizeof(ChessBoard*)*self->tempNextFilled);
-    ChessBoard* next;
-    for(i = 0; i < self->tempNextFilled; i++){
-        next = self->tempNext[i];
-        next->previous = self->currentBoard;
-        self->currentBoard->next[i] = next;
-    }
-    if(self->cloneTemplate!=NULL){
-        ChessBoard_delete(self->cloneTemplate);
-        self->cloneTemplate = NULL;
-    }
+void __finish(ChessMoveGenerator* self,
+    move_t** to, int* toCount){
+    (*toCount) = self->nextCount;
+    assert((*to)==NULL);
+    (*to) = (move_t*)malloc(
+        sizeof(move_t)*self->nextCount);
+    memcpy(*to, self->next, self->nextCount);
 }
 
 void __initIterValues(ChessMoveGenerator* self){
-    self->tempNextFilled = 0;
+    self->nextCount = 0;
     flag_t flags = self->currentBoard->flags;
     self->toPlay = flags&TO_PLAY_FLAG?BLACK:WHITE;
-    if(self->toPlay==WHITE){
-        self->inCheck = flags&WHITE_IN_CHECK_FLAG;
-        self->curSet = self->currentBoard->whitePieces;
-    }
-    else{
-        self->inCheck = flags&BLACK_IN_CHECK_FLAG;
-        self->curSet = self->currentBoard->blackPieces;
-    }
-    ChessBoard* clone = ChessBoard_clone(self->currentBoard);
-    ChessBoard_clearEnPassantFlags(clone);
-    ChessBoard_toggleToPlay(clone);
-    self->cloneTemplate = clone;
+    self->inCheck = __testForCheck(self->currentBoard, self->toPlay);
 }
 
 int __testForCheck(ChessBoard* board, color_e color){
-    ChessPieceSet* pieces = color==WHITE?
-        board->whitePieces:board->blackPieces;
-    ChessPieceSet* opPieces = color==WHITE?
-        board->blackPieces:board->whitePieces;
+    ChessPieceSet* pieces = board->pieceSets[color];
+    ChessPieceSet* opPieces = board->pieceSets[OTHER_COLOR(color)];
     ChessPiece* king = pieces->piecesByType[TYPE_TO_INT(KING)][0];
     int kingRank, kingFile;
     kingRank = GET_RANK(king->location);
@@ -227,10 +205,8 @@ int __testForCheck(ChessBoard* board, color_e color){
     //Otherwise, the king is not in check
     return 0;
 }
-
-int __finalizeOrDelete(ChessMoveGenerator* self, 
-    ChessBoard* board, int validate){
-    if(validate && __testForCheck(board, self->toPlay)){
+int __finalizeOrUndo(ChessMoveGenerator* self, int validate){
+    if(validate && __testForCheck(, self->toPlay)){
         ChessBoard_delete(board);
         return 0;
     }
@@ -242,9 +218,6 @@ int __finalizeOrDelete(ChessMoveGenerator* self,
     }
     self->tempNext[self->tempNextFilled++] = board;
     return 1;
-}
-ChessBoard* __getCleanBoard(ChessMoveGenerator* self){
-    return ChessBoard_clone(self->cloneTemplate);
 }
 int __generatePawnPromotion(ChessMoveGenerator* self, 
     ChessBoard* setup, pieceType_e type,
@@ -276,7 +249,7 @@ void __generatePawnCapture(ChessMoveGenerator* self, ChessPiece* pawn,
     ChessBoard* clone;
     ChessPiece* capture, *promoted;
     ChessPieceSet* set, *opSet;
-    capture = self->currentBoard->squares[
+    capture = self->board->squares[
         RANK_FILE(rank+pawnDirection, file+dir)];
     if(capture!=NULL && capture->color!=self->toPlay){
         if(rank==lastRank){
@@ -329,7 +302,7 @@ void __generatePawnMoves(ChessMoveGenerator* self){
         rank = GET_RANK(pawn->location);
         file = GET_FILE(pawn->location);
         //try to move forward
-        if(self->currentBoard->squares[
+        if(self->board->squares[
             RANK_FILE(rank+pawnDirection, file)]==NULL){
             if(rank==lastRank){
                 //generate promotions
@@ -349,7 +322,7 @@ void __generatePawnMoves(ChessMoveGenerator* self){
                     RANK_FILE(rank+pawnDirection, file));
                 //and try to move forward 2 if in home rank
                 if(__finalizeOrDelete(self, clone, 1) &&
-                    pawnHomeRank==rank && self->currentBoard->squares[
+                    pawnHomeRank==rank && self->board->squares[
                     RANK_FILE(rank+pawnDirection*2, file)]==NULL){
                     clone = __getCleanBoard(self);
                     ChessBoard_movePieceByLoc(clone, pawn->location, 
@@ -367,6 +340,7 @@ void __generatePawnMoves(ChessMoveGenerator* self){
             __generatePawnCapture(self, pawn, rank, file, 1, pawnDirection, lastRank);
     }//end for 
 }
+/*
 void __generateDirectionalMoves(ChessMoveGenerator* self, ChessPiece* piece, int dRank, int dFile){
     ChessBoard* clone;
     ChessPieceSet* opSet;
@@ -376,7 +350,7 @@ void __generateDirectionalMoves(ChessMoveGenerator* self, ChessPiece* piece, int
     file = GET_FILE(piece->location)+dFile;
     int validated = 0;
     while(((rank&7)==rank) && ((file&7)==file)){
-        capture = self->currentBoard->squares[RANK_FILE(rank,file)];
+        capture = self->board->squares[RANK_FILE(rank,file)];
         if(capture==NULL){
             clone = __getCleanBoard(self);
             ChessBoard_movePieceByLoc(clone, piece->location, 
@@ -480,7 +454,7 @@ int __generateSimpleMove(ChessMoveGenerator* self, ChessPiece* piece,
     rank = GET_RANK(piece->location)+dRank;
     file = GET_FILE(piece->location)+dFile;
     if(((rank&7)==rank) && ((file&7)==file)){
-        capture = self->currentBoard->squares[RANK_FILE(rank,file)];
+        capture = self->board->squares[RANK_FILE(rank,file)];
         if((capture!=NULL) && (capture->color != self->toPlay)){
             clone = __getCleanBoard(self);
             capture = clone->squares[RANK_FILE(rank,file)];
@@ -538,15 +512,15 @@ void __generateKingMoves(ChessMoveGenerator* self){
     self->cloneTemplate->flags = flagsBackup;
 }
 void __generateEnPassant(ChessMoveGenerator* self){
-    if(!(self->currentBoard->flags&EN_PASSANT_FLAG))
+    if(!(self->board->flags&EN_PASSANT_FLAG))
         return;
-    int file = (self->currentBoard->flags>>EN_PASSANT_FILE_OFFSET)&7;
+    int file = (self->board->flags>>EN_PASSANT_FILE_OFFSET)&7;
     int pawnDirection = self->toPlay==WHITE?1:-1;
     int enPassantFromRank = self->toPlay==WHITE?4:3;
     ChessBoard* clone;
     ChessPiece* pawn;
     if(file<7){
-        pawn = self->currentBoard->squares[
+        pawn = self->board->squares[
             RANK_FILE(enPassantFromRank, file+1)];
         if(pawn!=NULL && pawn->type==PAWN &&
             pawn->color==self->toPlay){
@@ -560,7 +534,7 @@ void __generateEnPassant(ChessMoveGenerator* self){
         }
     }
     if(file>0){
-        pawn = self->currentBoard->squares[
+        pawn = self->board->squares[
             RANK_FILE(enPassantFromRank, file-1)];
         if(pawn!=NULL && pawn->type==PAWN &&
             pawn->color==self->toPlay){
@@ -569,9 +543,9 @@ void __generateEnPassant(ChessMoveGenerator* self){
             if(clone->squares[RANK_FILE(enPassantFromRank, file)]
                 ==NULL){
                 printf("%d, %d\n", enPassantFromRank, file);
-                ChessBoard_print(self->currentBoard->previous);
+                ChessBoard_print(self->board->previous);
                 printf("\n");
-                ChessBoard_print(self->currentBoard);
+                ChessBoard_print(self->board);
             }
             //end debugging
             ChessBoard_quickRemoveByLoc(clone, 
@@ -595,9 +569,9 @@ void __generateCastlings(ChessMoveGenerator* self){
     int homeRank = self->toPlay==WHITE?0:7;
     int canKingCastle = 0, canQueenCastle = 0;
     if(self->toPlay==WHITE){
-        if(self->currentBoard->flags&WHITE_KING_CASTLE_FLAG)
+        if(self->board->flags&WHITE_KING_CASTLE_FLAG)
             canKingCastle = 1;
-        if(self->currentBoard->flags&WHITE_QUEEN_CASTLE_FLAG)
+        if(self->board->flags&WHITE_QUEEN_CASTLE_FLAG)
             canQueenCastle = 1;
     }
     else{
@@ -648,3 +622,4 @@ void __generateCastlings(ChessMoveGenerator* self){
     }
     self->cloneTemplate->flags = flagsBackup;
 }
+*/

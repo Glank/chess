@@ -44,6 +44,7 @@ int main(void){
     initZobrist();
     ChessBoard* board = ChessBoard_new();
     ChessBoard_setUp(board);
+    ChessMoveGenerator* gen = ChessMoveGenerator_new();
 
     move_t move = NEW_MOVE(LOC("d2"),LOC("d3"));
     ChessBoard_makeMove(board, move);
@@ -61,9 +62,15 @@ int main(void){
     move = NEW_MOVE(LOC("d4"),LOC("e3"));
     move|=EN_PASSANT_MOVE;
     ChessBoard_makeMove(board, move);
-    int i;
-    for(i = 0; i < 6; i++)
-        ChessBoard_unmakeMove(board);
+    move = NEW_MOVE(LOC("d1"),LOC("d7"));
+    move|=CAPTURE_MOVE_FLAG;
+    ChessBoard_makeMove(board, move);
+//    int i;
+//    for(i = 0; i < 6; i++)
+//        ChessBoard_unmakeMove(board);
+    
+    ChessMoveGenerator_generateMoves(gen, board, NULL, NULL);
+
 
     ChessBoard_print(board);
 
@@ -79,8 +86,7 @@ int main(void){
     }
     //*/
 
-    //ChessMoveGenerator_delete(gen);
-    //ChessBoard_deleteAllNext(board);
+    ChessMoveGenerator_delete(gen);
     ChessBoard_delete(board);
     closeZobrist();
     return 0;

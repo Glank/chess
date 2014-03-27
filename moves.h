@@ -9,15 +9,15 @@ typedef struct ChessMoveGenerator ChessMoveGenerator;
 struct ChessMoveGenerator{
     move_t next[MOVE_GEN_MAX_ALLOCATED];
     int nextCount;
-    ChessBoard* currentBoard;
+    ChessBoard* board;
     color_e toPlay;
     int inCheck;
-    ChessPieceSet* curSet;
 };
 //sets self->next and associated vars
 //takes non-trivial time
 ChessMoveGenerator* ChessMoveGenerator_new();
 void ChessMoveGenerator_delete(ChessMoveGenerator* self);
 void ChessMoveGenerator_generateMoves(
-    ChessMoveGenerator* self, ChessBoard* from);
+    ChessMoveGenerator* self, ChessBoard* from,
+    move_t** to, int* toCount);
 #endif

@@ -1,6 +1,6 @@
 CFLAGS=-Wall -g
 OBJS=board.o zobrist.o moves.o
-TEST_OBJS=board.o zobrist.o
+TEST_OBJS=board.o zobrist.o moves.o
 
 all:    test	
 
