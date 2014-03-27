@@ -7,10 +7,9 @@
 typedef struct ChessMoveGenerator ChessMoveGenerator;
 
 struct ChessMoveGenerator{
-    ChessBoard** tempNext;
-    int tempNextFilled;
+    move_t next[MOVE_GEN_MAX_ALLOCATED];
+    int nextCount;
     ChessBoard* currentBoard;
-    ChessBoard* cloneTemplate;
     color_e toPlay;
     int inCheck;
     ChessPieceSet* curSet;
