@@ -11,42 +11,33 @@
  * http://chessprogramming.wikispaces.com/Perft
  * http://chessprogramming.wikispaces.com/Perft+Results
  **/
-/*
 unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen, 
     int depth){
+    if(depth==0)
+        return 1;
+
     int i;
     unsigned long nodes = 0;
-    
-    ChessMoveGenerator_generateMoves(gen, start);
-    if(start->nextCount==0){
-        if(start->flags&TO_PLAY_FLAG && 
-            start->flags&WHITE_IN_CHECK_FLAG)
-            printf("Checkmate\n");
-        else if(!(start->flags&TO_PLAY_FLAG) && 
-            start->flags&BLACK_IN_CHECK_FLAG)
-            printf("Checkmate\n");
-        else
-            printf("Stalemate\n");
-        ChessBoard_print(start);
+    move_t *next = NULL;
+    int nextCount = 0;
+    ChessMoveGenerator_generateMoves(gen, &next, &nextCount);
+    for (i = 0; i < nextCount; i++){
+        ChessBoard_makeMove(start, next[i]);
+        nodes += perft(start, gen, depth-1);
+        ChessBoard_unmakeMove(start);
     }
-    if(depth==0){
-        ChessBoard_deleteAllNext(start);
-        return 1;
-    }
-    for (i = 0; i < start->nextCount; i++)
-        nodes += perft(start->next[i], gen, depth-1);
-    ChessBoard_deleteAllNext(start);
+    free(next);
     return nodes;
 }
-*/
 
 int main(void){
     initZobrist();
     ChessBoard* board = ChessBoard_new();
     ChessBoard_setUp(board);
-    ChessMoveGenerator* gen = ChessMoveGenerator_new();
+    ChessMoveGenerator* gen = ChessMoveGenerator_new(board);
 
-    move_t move = NEW_MOVE(LOC("d2"),LOC("d3"));
+/*
+    move_t move = NEW_MOVE(LOC("d2"),LOC("d5"));
     ChessBoard_makeMove(board, move);
     move = NEW_MOVE(LOC("e7"),LOC("e5"));
     move|=DOUBLE_PAWN_PUSH_MOVE;
@@ -65,26 +56,20 @@ int main(void){
     move = NEW_MOVE(LOC("d1"),LOC("d7"));
     move|=CAPTURE_MOVE_FLAG;
     ChessBoard_makeMove(board, move);
-//    int i;
-//    for(i = 0; i < 6; i++)
-//        ChessBoard_unmakeMove(board);
+*/
     
-    ChessMoveGenerator_generateMoves(gen, board, NULL, NULL);
-
-
     ChessBoard_print(board);
 
-    //printf("%lu\n", perft(board, gen, 4));
-
-    /*
+    printf("%lu\n", perft(board, gen, 5));
+/*
     int i;
-    ChessBoard* next;
-    for(i = 0; i < board->nextCount; i++){
-        next = board->next[i];
-        ChessBoard_print(next);
-        printf("\n");
+    for(i = 0; i < nextCount; i++){
+        printf("\n%x\n", next[i]);
+        ChessBoard_makeMove(board, next[i]);
+        ChessBoard_print(board);
+        ChessBoard_unmakeMove(board);
     }
-    //*/
+*/
 
     ChessMoveGenerator_delete(gen);
     ChessBoard_delete(board);

@@ -235,6 +235,30 @@ void ChessBoard_makeMove(ChessBoard* self, move_t move){
             __addPiece(self, piece);
         }
     }
+    if(meta==0){
+        switch(from){
+        case WHITE_QUEEN_ROOK_START:
+            __unsetCastleFlag(self, WHITE_QUEEN_CASTLE_FLAG);
+            break;
+        case WHITE_KING_ROOK_START:
+            __unsetCastleFlag(self, WHITE_KING_CASTLE_FLAG);
+            break;
+        case WHITE_KING_START:
+            __unsetCastleFlag(self, WHITE_QUEEN_CASTLE_FLAG);
+            __unsetCastleFlag(self, WHITE_KING_CASTLE_FLAG);
+            break;
+        case BLACK_QUEEN_ROOK_START:
+            __unsetCastleFlag(self, BLACK_QUEEN_CASTLE_FLAG);
+            break;
+        case BLACK_KING_ROOK_START:
+            __unsetCastleFlag(self, BLACK_KING_CASTLE_FLAG);
+            break;
+        case BLACK_KING_START:
+            __unsetCastleFlag(self, BLACK_QUEEN_CASTLE_FLAG);
+            __unsetCastleFlag(self, BLACK_KING_CASTLE_FLAG);
+            break;
+        }
+    }
     __movePieceByLoc(self, from, to);
 }
 move_t ChessBoard_unmakeMove(ChessBoard* self){
@@ -358,6 +382,9 @@ void ChessBoard_print(ChessBoard* self){
         }
         printf("\n");
     }
+}
+void ChessBoard_longPrint(ChessBoard* self){
+    ChessBoard_print(self);
     printf("Castle Flags: ");
     if(self->flags&WHITE_KING_CASTLE_FLAG)
         printf("K");

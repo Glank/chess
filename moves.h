@@ -11,13 +11,13 @@ struct ChessMoveGenerator{
     int nextCount;
     ChessBoard* board;
     color_e toPlay;
+    ChessPieceSet* curSet;
     int inCheck;
 };
 //sets self->next and associated vars
 //takes non-trivial time
-ChessMoveGenerator* ChessMoveGenerator_new();
+ChessMoveGenerator* ChessMoveGenerator_new(ChessBoard* board);
 void ChessMoveGenerator_delete(ChessMoveGenerator* self);
 void ChessMoveGenerator_generateMoves(
-    ChessMoveGenerator* self, ChessBoard* from,
-    move_t** to, int* toCount);
+    ChessMoveGenerator* self, move_t** to, int* toCount);
 #endif

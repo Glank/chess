@@ -23,6 +23,12 @@ typedef enum {WHITE=0, BLACK=1} color_e;
 typedef enum {
     KING=0, QUEEN=2, ROOK=4, KNIGHT=6, BISHOP=8, PAWN=10
 } pieceType_e;
+#define KING_INDEX 0
+#define QUEEN_INDEX 1
+#define ROOK_INDEX 2
+#define KNIGHT_INDEX 3
+#define BISHOP_INDEX 4
+#define PAWN_INDEX 5
 #define TYPE_TO_INT(type) (((int)(type))>>1)
 #define TYPE_COLOR_TO_INT(type,color) (((int)(type))+((int)(color)))
 typedef uint16_t move_t;
@@ -53,6 +59,13 @@ typedef uint16_t move_t;
 //some max constants arbitrarily set
 #define MAX_MOVES 1024
 #define MAX_CAPTURES 30
+//some important locations
+#define WHITE_QUEEN_ROOK_START 0
+#define WHITE_KING_START 4
+#define WHITE_KING_ROOK_START 7
+#define BLACK_QUEEN_ROOK_START 56
+#define BLACK_KING_START 60
+#define BLACK_KING_ROOK_START 63
 
 struct ChessPiece{
     location_t location;
@@ -87,4 +100,5 @@ void ChessBoard_setUp(ChessBoard* self);
 void ChessBoard_makeMove(ChessBoard* self, move_t move);
 move_t ChessBoard_unmakeMove(ChessBoard* self);
 void ChessBoard_print(ChessBoard* self);
+void ChessBoard_longPrint(ChessBoard* self);
 #endif
