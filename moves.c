@@ -51,6 +51,12 @@ void ChessMoveGenerator_generateMoves(
     __finish(self, to, toCount);
 }
 
+int ChessBoard_testForCheck(ChessBoard* board){
+    assert(board!=NULL);
+    return __testForCheck(board, 
+        ((board->flags)&TO_PLAY_FLAG)?BLACK:WHITE);
+}
+
 void __finish(ChessMoveGenerator* self,
     move_t** to, int* toCount){
     (*toCount) = self->nextCount;
@@ -97,20 +103,20 @@ int __testForCheck(ChessBoard* board, color_e color){
     }
     //test for check by knight
     int i, rankDelta, fileDelta, rank, file;
-    int size = opPieces->piecesCounts[TYPE_TO_INT(KNIGHT)];
+    int size = opPieces->piecesCounts[KNIGHT_INDEX];
     ChessPiece* knight;
     for(i=0; i<size; i++){
-        knight = opPieces->piecesByType[TYPE_TO_INT(KNIGHT)][i];
+        knight = opPieces->piecesByType[KNIGHT_INDEX][i];
         rankDelta = kingRank-GET_RANK(knight->location);
         fileDelta = kingFile-GET_FILE(knight->location);
         if((rankDelta*rankDelta+fileDelta*fileDelta)==5)
             return 1;
     }
     //test for check by bishop
-    size = opPieces->piecesCounts[TYPE_TO_INT(BISHOP)];
+    size = opPieces->piecesCounts[BISHOP_INDEX];
     ChessPiece* bishop;
     for(i=0; i<size; i++){
-        bishop = opPieces->piecesByType[TYPE_TO_INT(BISHOP)][i];
+        bishop = opPieces->piecesByType[BISHOP_INDEX][i];
         rankDelta = kingRank-GET_RANK(bishop->location);
         fileDelta = kingFile-GET_FILE(bishop->location);
         if(rankDelta*rankDelta == fileDelta*fileDelta){
@@ -127,9 +133,8 @@ int __testForCheck(ChessBoard* board, color_e color){
                 rank+=rankDelta;
                 file+=fileDelta;
             }
-            if(rank==kingRank){
+            if(rank==kingRank)
                 return 1;
-            }
         }
     }
     //test for check by rook
@@ -263,10 +268,12 @@ void __generatePawnMoves(ChessMoveGenerator* self){
             else{
                 //generate regular forward push
                 ChessBoard_makeMove(self->board, move);
-                if(__finalizeAndUndo(self, 1) && pawnHomeRank==rank){
+                if((__finalizeAndUndo(self, 1)||self->inCheck)
+                        && pawnHomeRank==rank){
                     to = RANK_FILE(rank+pawnDirection*2, file);
                     if(self->board->squares[to]==NULL){
                         move = NEW_MOVE(pawn->location,to);
+                        move|=DOUBLE_PAWN_PUSH_MOVE;
                         ChessBoard_makeMove(self->board, move);
                         __finalizeAndUndo(self, self->inCheck);
                     }
@@ -378,10 +385,10 @@ int __generateSimpleMove(ChessMoveGenerator* self, ChessPiece* piece,
         to = RANK_FILE(rank,file);
         move = NEW_MOVE(piece->location, to);
         capture = self->board->squares[to];
-        if((capture!=NULL) && (capture->color != self->toPlay))
+        if((capture!=NULL) && ((capture->color) != (self->toPlay)))
             move|=CAPTURE_MOVE_FLAG;
         else if(capture!=NULL)
-            return -1;
+            return -1; //the same color
         ChessBoard_makeMove(self->board, move);
         if(__finalizeAndUndo(self, validate)) return 1;
         else return 0;

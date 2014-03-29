@@ -20,4 +20,5 @@ ChessMoveGenerator* ChessMoveGenerator_new(ChessBoard* board);
 void ChessMoveGenerator_delete(ChessMoveGenerator* self);
 void ChessMoveGenerator_generateMoves(
     ChessMoveGenerator* self, move_t** to, int* toCount);
+int ChessBoard_testForCheck(ChessBoard* board);
 #endif

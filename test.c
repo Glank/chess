@@ -11,19 +11,37 @@
  * http://chessprogramming.wikispaces.com/Perft
  * http://chessprogramming.wikispaces.com/Perft+Results
  **/
+int checks = 0, captures = 0;
+int checkmates = 0, ep = 0;
+int toCounts[64];
 unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen, 
     int depth){
-    if(depth==0)
+    move_t *next = NULL;
+    int nextCount = 0;
+    if(depth==0){
+        if(ChessBoard_testForCheck(start)){
+            checks++;
+            ChessMoveGenerator_generateMoves(gen, &next, &nextCount);
+            free(next);
+            if(nextCount==0)
+                checkmates++;
+        }
         return 1;
+    }
 
     int i;
     unsigned long nodes = 0;
-    move_t *next = NULL;
-    int nextCount = 0;
     ChessMoveGenerator_generateMoves(gen, &next, &nextCount);
     for (i = 0; i < nextCount; i++){
         ChessBoard_makeMove(start, next[i]);
         nodes += perft(start, gen, depth-1);
+        if(depth==1){
+            toCounts[GET_FROM(next[i])]++;
+            if(next[i]&CAPTURE_MOVE_FLAG)
+                captures++;
+            if(GET_META(next[i])==EN_PASSANT_MOVE)
+                ep++;
+        }
         ChessBoard_unmakeMove(start);
     }
     free(next);
@@ -35,6 +53,9 @@ int main(void){
     ChessBoard* board = ChessBoard_new();
     ChessBoard_setUp(board);
     ChessMoveGenerator* gen = ChessMoveGenerator_new(board);
+    int i;
+    for(i=0;i<64;i++)
+        toCounts[i]=0;
 
 /*
     move_t move = NEW_MOVE(LOC("d2"),LOC("d5"));
@@ -61,6 +82,12 @@ int main(void){
     ChessBoard_print(board);
 
     printf("%lu\n", perft(board, gen, 5));
+    printf("%d\n%d\n%d\n%d\n", checks, captures, checkmates, ep);
+    /*
+    for(i=0;i<64;i++){
+        printf("%c%c: %d\n", 'a'+GET_FILE(i), '1'+GET_RANK(i),
+            toCounts[i]);
+    }//*/
 /*
     int i;
     for(i = 0; i < nextCount; i++){
