@@ -2,6 +2,7 @@
 #define CHESS_BOARD_H_INCLUDE
 #include <inttypes.h>
 #include "zobrist.h"
+#include "strutl.h"
 typedef struct ChessPiece ChessPiece;
 typedef struct ChessPieceSet ChessPieceSet;
 typedef struct ChessBoard ChessBoard;
@@ -66,6 +67,8 @@ typedef uint16_t move_t;
 #define BLACK_QUEEN_ROOK_START 56
 #define BLACK_KING_START 60
 #define BLACK_KING_ROOK_START 63
+//the FEN starting position
+#define FEN_START "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 struct ChessPiece{
     location_t location;
@@ -94,9 +97,8 @@ struct ChessBoard{
     flag_t flags;
     zob_hash_t hash;
 };
-ChessBoard* ChessBoard_new();
+ChessBoard* ChessBoard_new(char* fen);
 void ChessBoard_delete(ChessBoard* self);
-void ChessBoard_setUp(ChessBoard* self);
 void ChessBoard_makeMove(ChessBoard* self, move_t move);
 move_t ChessBoard_unmakeMove(ChessBoard* self);
 void ChessBoard_print(ChessBoard* self);

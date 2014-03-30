@@ -4,7 +4,6 @@
 #include <string.h>
 #include "board.h"
 
-
 void __addPiece(ChessBoard* board, ChessPiece* piece);
 void __movePieceByLoc(ChessBoard* self, location_t from,
     location_t to);
@@ -30,39 +29,18 @@ char __getPieceChar(ChessPiece* self){
     int i = TYPE_COLOR_TO_INT(self->type, self->color);
     return table[i];
 }
+ChessPiece* __newPieceFromChar(char c, location_t loc){
+    int typeColor = getCharIndex(c, "KkQqRrNnBbPp", 12);
+    assert(typeColor!=-1);
+    pieceType_e type = (pieceType_e)(typeColor&(~1));
+    color_e color = (color_e)(typeColor&1);
+    return ChessPiece_new(color, type, loc);
+}
 //get a unique integer index in the ZOBRIST_TABLE
 int __getZobristID(ChessPiece* self){
     int i = TYPE_COLOR_TO_INT(self->type, self->color);
     i=(i<<6)+(int)self->location;
     return i;
-}
-//set up one side of the board and it's ChessPieceSet
-void __initSide(ChessBoard* board, color_e color){
-    ChessPieceSet* set = board->pieceSets[(int)color];
-    int backRank, pawnRank;
-    board->pieceSets[(int)color] = set;
-    if(color==WHITE){
-        backRank = 0;
-        pawnRank = 1;
-    }
-    else{
-        assert(color==BLACK);
-        backRank = 7;
-        pawnRank = 6;
-    }
-    //order of back rank
-    pieceType_e backRankOrder[] = {
-        ROOK, KNIGHT, BISHOP, QUEEN, 
-        KING, BISHOP, KNIGHT, ROOK
-    };
-    //init all the pieces
-    int i;
-    for(i = 0; i<8; i++){
-        __addPiece(board, ChessPiece_new(
-            color, backRankOrder[i], RANK_FILE(backRank,i)));
-        __addPiece(board, ChessPiece_new(
-            color, PAWN, RANK_FILE(pawnRank,i)));
-    }
 }
 ChessPieceSet* ChessPieceSet_new(){
     ChessPieceSet* self = (ChessPieceSet*)malloc(
@@ -127,7 +105,7 @@ void __uncapturePiece(ChessBoard* board){
     __addPiece(board, piece);
 }
 
-ChessBoard* ChessBoard_new(){
+ChessBoard* ChessBoard_new(char* fen){
     ChessBoard* board = (ChessBoard*)malloc(sizeof(ChessBoard));
     board->movesCount = 0;
     board->capturedCount = 0;
@@ -137,22 +115,74 @@ ChessBoard* ChessBoard_new(){
     board->pieceSets[(int)WHITE] = ChessPieceSet_new();
     board->pieceSets[(int)BLACK] = ChessPieceSet_new();
     board->hash = 0;
-    board->hash = board->hash
-        ^ZOBRIST_TABLE[ZOB_WHITE_KING_CASTLE]
-        ^ZOBRIST_TABLE[ZOB_WHITE_QUEEN_CASTLE]
-        ^ZOBRIST_TABLE[ZOB_BLACK_KING_CASTLE]
-        ^ZOBRIST_TABLE[ZOB_BLACK_QUEEN_CASTLE];
     board->flags = 0;
-    board->flags = board->flags
-        ^WHITE_KING_CASTLE_FLAG
-        ^WHITE_QUEEN_CASTLE_FLAG
-        ^BLACK_KING_CASTLE_FLAG
-        ^BLACK_QUEEN_CASTLE_FLAG;
+
+    //read FEN squares
+    ChessPiece* piece;
+    int rank=7, file=0;
+    for(i=0;(rank!=0) || (file!=8);i++){
+        if(isDigit(fen[i]))
+            file+=digitToInt(fen[i]);
+        else if(fen[i]=='/'){
+            assert(file==8);
+            rank--;
+            file = 0;
+        }
+        else{
+            assert((rank&7)==rank);
+            assert((file&7)==file);
+            piece = __newPieceFromChar(fen[i], RANK_FILE(rank,file)); 
+            __addPiece(board, piece);
+            file++;
+        }
+    }
+    assert(fen[i]==' ');
+    i++;
+    //read FEN to-play flag
+    if(fen[i]=='b'){
+        board->hash^=ZOBRIST_TABLE[ZOB_TO_PLAY];
+        board->flags^=TO_PLAY_FLAG;
+    }
+    else{ assert(fen[i]=='w'); }
+    i++;
+    assert(fen[i]==' ');
+    i++;
+    //read FEN castle flags
+    while(fen[i]!=' '){
+        switch(fen[i]){
+        case 'K':
+            board->hash^=ZOBRIST_TABLE[ZOB_WHITE_KING_CASTLE];
+            board->flags^=WHITE_KING_CASTLE_FLAG;
+            break;
+        case 'Q':
+            board->hash^=ZOBRIST_TABLE[ZOB_WHITE_QUEEN_CASTLE];
+            board->flags^=WHITE_QUEEN_CASTLE_FLAG;
+            break;
+        case 'k':
+            board->hash^=ZOBRIST_TABLE[ZOB_BLACK_KING_CASTLE];
+            board->flags^=BLACK_KING_CASTLE_FLAG;
+            break;
+        case 'q':
+            board->hash^=ZOBRIST_TABLE[ZOB_BLACK_QUEEN_CASTLE];
+            board->flags^=BLACK_QUEEN_CASTLE_FLAG;
+            break;
+        case '-':
+            break;
+        default:
+            assert(0);
+        }
+        i++;
+    }
+    assert(fen[i]==' ');
+    i++;
+    //read FEN en-passant flag
+    if(fen[i]!='-'){
+        i++; //skip the rank
+        assert(isDigit(fen[i]));
+        __setEnPassantFlags(board, digitToInt(fen[i]));
+    }
+    //TODO implement and capture other FEN flags
     return board;
-}
-void ChessBoard_setUp(ChessBoard* self){
-    __initSide(self, WHITE);
-    __initSide(self, BLACK);
 }
 void ChessBoard_delete(ChessBoard* self){
     int i;
