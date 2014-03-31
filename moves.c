@@ -4,7 +4,7 @@
 #include <assert.h>
 #include "moves.h"
 
-void __initIterValues(ChessMoveGenerator* self);
+void __initIterValues(ChessMoveGenerator* self, int inCheck);
 void __generatePawnMoves(ChessMoveGenerator* self);
 void __generateDirectionalMoves(ChessMoveGenerator* self,
     ChessPiece* piece, int dRank, int dFile);
@@ -37,9 +37,9 @@ void ChessMoveGenerator_delete(ChessMoveGenerator* self){
 }
 
 void ChessMoveGenerator_generateMoves(
-    ChessMoveGenerator* self,
+    ChessMoveGenerator* self, int inCheck,
     move_t** to, int* toCount){
-    __initIterValues(self);
+    __initIterValues(self, inCheck);
     //printf("gen pawn\n");
     __generatePawnMoves(self);
     //printf("gen bishop\n");
@@ -74,12 +74,12 @@ void __finish(ChessMoveGenerator* self,
     memcpy(*to, self->next, size);
 }
 
-void __initIterValues(ChessMoveGenerator* self){
+void __initIterValues(ChessMoveGenerator* self, int inCheck){
     self->nextCount = 0;
     flag_t flags = self->board->flags;
     self->toPlay = flags&TO_PLAY_FLAG?BLACK:WHITE;
     self->curSet = self->board->pieceSets[(int)(self->toPlay)];
-    self->inCheck = __testForCheck(self->board, self->toPlay);
+    self->inCheck = inCheck; 
 }
 
 int __testForCheck(ChessBoard* board, color_e color){
