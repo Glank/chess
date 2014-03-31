@@ -38,6 +38,7 @@ ChessPiece* __newPieceFromChar(char c, location_t loc){
 }
 //get a unique integer index in the ZOBRIST_TABLE
 int __getZobristID(ChessPiece* self){
+    assert(self!=NULL);
     int i = TYPE_COLOR_TO_INT(self->type, self->color);
     i=(i<<6)+(int)self->location;
     return i;
@@ -241,8 +242,26 @@ void ChessBoard_makeMove(ChessBoard* self, move_t move){
             self->squares[RANK_FILE(rank,file)]);
         break;
     default:
-        if(meta&CAPTURE_MOVE_FLAG)
-            __capturePiece(self, self->squares[to]);
+        if(meta&CAPTURE_MOVE_FLAG){
+            ChessPiece* captured = self->squares[to];
+            __capturePiece(self, captured);
+            if(captured->type==ROOK){
+                switch(to){
+                case WHITE_QUEEN_ROOK_START:
+                    __unsetCastleFlag(self, WHITE_QUEEN_CASTLE_FLAG);
+                    break;
+                case WHITE_KING_ROOK_START:
+                    __unsetCastleFlag(self, WHITE_KING_CASTLE_FLAG);
+                    break;
+                case BLACK_QUEEN_ROOK_START:
+                    __unsetCastleFlag(self, BLACK_QUEEN_CASTLE_FLAG);
+                    break;
+                case BLACK_KING_ROOK_START:
+                    __unsetCastleFlag(self, BLACK_KING_CASTLE_FLAG);
+                    break;
+                }
+            }
+        }
         if(meta&PROMOTION_MOVE_FLAG){
             ChessPiece* piece = self->squares[from];
             __removePiece(self, piece);
@@ -265,7 +284,7 @@ void ChessBoard_makeMove(ChessBoard* self, move_t move){
             __addPiece(self, piece);
         }
     }
-    if(meta==0){
+    if(meta==0 || meta==CAPTURE_MOVE_FLAG){
         switch(from){
         case WHITE_QUEEN_ROOK_START:
             __unsetCastleFlag(self, WHITE_QUEEN_CASTLE_FLAG);
@@ -451,9 +470,22 @@ void ChessBoard_longPrint(ChessBoard* self){
             __getPieceChar(self->captured[i])); 
     }
     printf("White Set:\n");
-    for(i = 0; i < 6; i++)
-        printf("%d)\t%d\n", i, self->pieceSets[0]->piecesCounts[i]);
+    int j;
+    for(i = 0; i < 6; i++){
+        printf("%d)\t%d\t", i, self->pieceSets[0]->piecesCounts[i]);
+        for(j = 0; j < self->pieceSets[0]->piecesCounts[i]; j++){
+            printf("%d ", self->pieceSets[0]->
+                piecesByType[i][j]->location);
+        }
+        printf("\n");
+    }
     printf("Black Set:\n");
-    for(i = 0; i < 6; i++)
-        printf("%d)\t%d\n", i, self->pieceSets[1]->piecesCounts[i]);
+    for(i = 0; i < 6; i++){
+        printf("%d)\t%d\t", i, self->pieceSets[1]->piecesCounts[i]);
+        for(j = 0; j < self->pieceSets[1]->piecesCounts[i]; j++){
+            printf("%d ", self->pieceSets[1]
+                ->piecesByType[i][j]->location);
+        }
+        printf("\n");
+    }
 }

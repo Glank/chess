@@ -40,13 +40,21 @@ void ChessMoveGenerator_generateMoves(
     ChessMoveGenerator* self,
     move_t** to, int* toCount){
     __initIterValues(self);
+    //printf("gen pawn\n");
     __generatePawnMoves(self);
+    //printf("gen bishop\n");
     __generateBishopMoves(self);
+    //printf("gen rook\n");
     __generateRookMoves(self);
+    //printf("gen queen\n");
     __generateQueenMoves(self);
+    //printf("gen knight\n");
     __generateKnightMoves(self);
+    //printf("gen king\n");
     __generateKingMoves(self);
+    //printf("gen en passant\n");
     __generateEnPassant(self);
+    //printf("gen castling\n");
     __generateCastlings(self);
     __finish(self, to, toCount);
 }
@@ -208,7 +216,7 @@ int __finalizeAndUndo(ChessMoveGenerator* self, int validate){
         ChessBoard_unmakeMove(self->board);
         return 0;
     }
-    self->next[self->nextCount++] = 
+    self->next[(self->nextCount)++] = 
         ChessBoard_unmakeMove(self->board);
     return 1;
 }
@@ -253,8 +261,14 @@ void __generatePawnMoves(ChessMoveGenerator* self){
     ChessPiece* pawn;
     move_t move;
     location_t to;
+    //since the order of the pawns might change in the set
+    //durring operations, we must store a local copy
+    ChessPiece** pawns = (ChessPiece**)malloc(
+        sizeof(ChessPiece*)*size);
+    memcpy(pawns, self->curSet->piecesByType[PAWN_INDEX], 
+        sizeof(ChessPiece*)*size);
     for(i=0;i<size;i++){
-        pawn = self->curSet->piecesByType[TYPE_TO_INT(PAWN)][i];
+        pawn = pawns[i];
         rank = GET_RANK(pawn->location);
         file = GET_FILE(pawn->location);
         //try to move forward
@@ -289,6 +303,7 @@ void __generatePawnMoves(ChessMoveGenerator* self){
                 lastRank);
         }
     }//end for 
+    free(pawns);
 }
 void __generateDirectionalMoves(ChessMoveGenerator* self, 
     ChessPiece* piece, int dRank, int dFile){
@@ -480,12 +495,14 @@ void __generateCastlings(ChessMoveGenerator* self){
             to = RANK_FILE(homeRank, 6);
             if(self->board->squares[to]==NULL){
                 move = NEW_MOVE(from,between);
+                assert(self->board->squares[from]!=NULL);
                 ChessBoard_makeMove(self->board, move);
                 if(__testForCheck(self->board, self->toPlay))
                     ChessBoard_unmakeMove(self->board);
                 else{
                     move = NEW_MOVE(from,to)|KING_CASTLE_MOVE;
                     ChessBoard_unmakeMove(self->board);
+                    ChessBoard_makeMove(self->board, move);
                     __finalizeAndUndo(self, 1);
                 }
             }
@@ -504,6 +521,7 @@ void __generateCastlings(ChessMoveGenerator* self){
                 else{
                     move = NEW_MOVE(from,to)|QUEEN_CASTLE_MOVE;
                     ChessBoard_unmakeMove(self->board);
+                    ChessBoard_makeMove(self->board, move);
                     __finalizeAndUndo(self, 1);
                 }
             }

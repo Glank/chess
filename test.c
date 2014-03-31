@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <assert.h>
 #include "board.h"
 #include "zobrist.h"
 #include "moves.h"
@@ -13,6 +14,7 @@
  **/
 int checks = 0, captures = 0;
 int checkmates = 0, ep = 0;
+int promotions = 0;
 int toCounts[64];
 unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen, 
     int depth){
@@ -32,16 +34,19 @@ unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen,
     int i;
     unsigned long nodes = 0;
     ChessMoveGenerator_generateMoves(gen, &next, &nextCount);
+    move_t last=-1;
     for (i = 0; i < nextCount; i++){
         ChessBoard_makeMove(start, next[i]);
-        nodes += perft(start, gen, depth-1);
         if(depth==1){
             toCounts[GET_FROM(next[i])]++;
             if(next[i]&CAPTURE_MOVE_FLAG)
                 captures++;
+            if(next[i]&PROMOTION_MOVE_FLAG)
+                promotions++;
             if(GET_META(next[i])==EN_PASSANT_MOVE)
                 ep++;
         }
+        nodes += perft(start, gen, depth-1);
         ChessBoard_unmakeMove(start);
     }
     free(next);
@@ -50,7 +55,7 @@ unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen,
 
 int main(void){
     initZobrist();
-    ChessBoard* board = ChessBoard_new(FEN_START);
+    ChessBoard* board = ChessBoard_new("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
     ChessMoveGenerator* gen = ChessMoveGenerator_new(board);
     int i;
     for(i=0;i<64;i++)
@@ -80,8 +85,12 @@ int main(void){
     
     ChessBoard_print(board);
 
-    printf("%lu\n", perft(board, gen, 4));
-    printf("%d\n%d\n%d\n%d\n", checks, captures, checkmates, ep);
+    printf("perft: %lu\n", perft(board, gen, 3));
+    printf("checks: %d\n", checks);
+    printf("captures: %d\n", captures);
+    printf("checkmates: %d\n", checkmates);
+    printf("en passants: %d\n", ep);
+    printf("promotions: %d\n", promotions);
     /*
     for(i=0;i<64;i++){
         printf("%c%c: %d\n", 'a'+GET_FILE(i), '1'+GET_RANK(i),
