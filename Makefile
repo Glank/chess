@@ -20,6 +20,7 @@ test: $(TEST_OBJS) test.c
 	$(CC) $(CFLAGS) -c test.c
 	$(CC) $(CFLAGS) $(TEST_OBJS) test.o -o test
 	valgrind --leak-check=full ./test
+	rm test
 
 clean:
 	rm -f *.o test
