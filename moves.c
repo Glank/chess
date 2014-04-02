@@ -37,8 +37,7 @@ void ChessMoveGenerator_delete(ChessMoveGenerator* self){
 }
 
 void ChessMoveGenerator_generateMoves(
-    ChessMoveGenerator* self, int inCheck,
-    move_t** to, int* toCount){
+    ChessMoveGenerator* self, int inCheck){
     __initIterValues(self, inCheck);
     //printf("gen pawn\n");
     __generatePawnMoves(self);
@@ -56,7 +55,6 @@ void ChessMoveGenerator_generateMoves(
     __generateEnPassant(self);
     //printf("gen castling\n");
     __generateCastlings(self);
-    __finish(self, to, toCount);
 }
 
 int ChessBoard_testForCheck(ChessBoard* board){
@@ -65,7 +63,7 @@ int ChessBoard_testForCheck(ChessBoard* board){
         ((board->flags)&TO_PLAY_FLAG)?BLACK:WHITE);
 }
 
-void __finish(ChessMoveGenerator* self,
+void ChessMoveGenerator_copyMoves(ChessMoveGenerator* self,
     move_t** to, int* toCount){
     (*toCount) = self->nextCount;
     assert((*to)==NULL);
@@ -131,6 +129,7 @@ int __testForCheck(ChessBoard* board, color_e color){
             //the king is on a diagonal with this opposing bishop
             //check every square inbetween to see if the bishop 
             //is blocked 
+            assert(!(rankDelta==0));
             rankDelta = rankDelta>0?1:-1;
             fileDelta = fileDelta>0?1:-1;
             rank = GET_RANK(bishop->location)+rankDelta;

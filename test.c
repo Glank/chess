@@ -22,10 +22,11 @@ unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen,
     int nextCount = 0;
     if(depth==0){
         if(ChessBoard_testForCheck(start)){
+            printf("\n");
+            ChessBoard_print(start);
             checks++;
-            ChessMoveGenerator_generateMoves(gen, 1, &next, &nextCount);
-            free(next);
-            if(nextCount==0)
+            ChessMoveGenerator_generateMoves(gen, 1);
+            if(gen->nextCount==0)
                 checkmates++;
         }
         return 1;
@@ -34,9 +35,9 @@ unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen,
     int i;
     unsigned long nodes = 0;
     ChessMoveGenerator_generateMoves(gen, 
-        ChessBoard_testForCheck(start),
+        ChessBoard_testForCheck(start));
+    ChessMoveGenerator_copyMoves(gen,
         &next, &nextCount);
-    move_t last=-1;
     for (i = 0; i < nextCount; i++){
         ChessBoard_makeMove(start, next[i]);
         if(depth==1){
