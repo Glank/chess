@@ -1,5 +1,6 @@
 #ifndef CHESS_HEURISTICS_H_INCLUDE
 #define CHESS_HEURISTICS_H_INCLUDE
+#include "moves.h"
 #include "board.h"
 
 typedef enum {ESTIMATE, ABSOLUTE} evalType_e;
@@ -11,7 +12,7 @@ struct ChessHNode{
     struct ChessHNode* parent;
     struct ChessHNode** children;
     int childrenCount;
-    color_t toPlay;
+    color_e toPlay;
     int inCheck;
     zob_hash_t hash;
     int halfMoveNumber;
@@ -20,8 +21,8 @@ struct ChessHNode{
     int evaluation;
     evalState_e state;
     evalType_e type;
-}
-ChessHNode* ChessHNode_new(ChessHNode* parent);
+};
+ChessHNode* ChessHNode_new(ChessHNode* parent, ChessBoard* board);
 void ChessHNode_delete(ChessHNode* self);
 void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board);
 #endif

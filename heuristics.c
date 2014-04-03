@@ -1,5 +1,7 @@
 #include "heuristics.h"
-#include "moves.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 #define PAWN_VALUE      100
 #define KNIGHT_VALUE    300
 #define BISHOP_VALUE    300
@@ -14,7 +16,7 @@ ChessHNode* ChessHNode_new(ChessHNode* parent, ChessBoard* board){
     self->childrenCount = -1;
     self->from = board->moves[board->movesCount-1];
     self->toPlay = board->flags&TO_PLAY_FLAG?BLACK:WHITE;
-    self->inCheck = ChessBoard_testForCheck(board, self->toPlay);
+    self->inCheck = ChessBoard_testForCheck(board);
     self->hash = board->hash;
     self->halfMoveNumber = board->movesCount;
     if(parent!=NULL)
