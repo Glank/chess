@@ -8,7 +8,7 @@ typedef enum {UN_EVAL, PRE_EVAL, FULL_EVAL} evalState_e;
 
 typedef struct ChessHNode ChessHNode;
 struct ChessHNode{
-    move_t from;
+    move_t move;
     struct ChessHNode* parent;
     struct ChessHNode** children;
     int childrenCount;
@@ -25,4 +25,6 @@ struct ChessHNode{
 ChessHNode* ChessHNode_new(ChessHNode* parent, ChessBoard* board);
 void ChessHNode_delete(ChessHNode* self);
 void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board);
+void ChessHNode_expandBranches(ChessHNode* self, ChessMoveGenerator* gen);
+void ChessHNode_expandLeaves(ChessHNode* self, ChessMoveGenerator* gen);
 #endif

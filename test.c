@@ -25,7 +25,7 @@ unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen,
             printf("\n");
             ChessBoard_print(start);
             checks++;
-            ChessMoveGenerator_generateMoves(gen, 1);
+            ChessMoveGenerator_generateMoves(gen, 1, NULL);
             if(gen->nextCount==0)
                 checkmates++;
         }
@@ -35,7 +35,7 @@ unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen,
     int i;
     unsigned long nodes = 0;
     ChessMoveGenerator_generateMoves(gen, 
-        ChessBoard_testForCheck(start));
+        ChessBoard_testForCheck(start), NULL);
     ChessMoveGenerator_copyMoves(gen,
         &next, &nextCount);
     for (i = 0; i < nextCount; i++){
@@ -55,6 +55,7 @@ unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen,
     free(next);
     return nodes;
 }
+
 
 int main(void){
     initZobrist();
@@ -87,7 +88,6 @@ int main(void){
 */
     
     ChessBoard_print(board);
-
     printf("perft: %lu\n", perft(board, gen, 3));
     printf("checks: %d\n", checks);
     printf("captures: %d\n", captures);

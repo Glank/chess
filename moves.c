@@ -4,7 +4,8 @@
 #include <assert.h>
 #include "moves.h"
 
-void __initIterValues(ChessMoveGenerator* self, int inCheck);
+void __initIterValues(ChessMoveGenerator* self, int inCheck,
+    void (*afterGen)(ChessBoard*));
 void __generatePawnMoves(ChessMoveGenerator* self);
 void __generateDirectionalMoves(ChessMoveGenerator* self,
     ChessPiece* piece, int dRank, int dFile);
@@ -37,8 +38,9 @@ void ChessMoveGenerator_delete(ChessMoveGenerator* self){
 }
 
 void ChessMoveGenerator_generateMoves(
-    ChessMoveGenerator* self, int inCheck){
-    __initIterValues(self, inCheck);
+    ChessMoveGenerator* self, int inCheck,
+    void (*afterGen)(ChessBoard*)){
+    __initIterValues(self, inCheck, afterGen);
     //printf("gen pawn\n");
     __generatePawnMoves(self);
     //printf("gen bishop\n");
@@ -72,7 +74,9 @@ void ChessMoveGenerator_copyMoves(ChessMoveGenerator* self,
     memcpy(*to, self->next, size);
 }
 
-void __initIterValues(ChessMoveGenerator* self, int inCheck){
+void __initIterValues(ChessMoveGenerator* self, int inCheck,
+    void (*afterGen)(ChessBoard*)){
+    self->afterGen = afterGen;
     self->nextCount = 0;
     flag_t flags = self->board->flags;
     self->toPlay = flags&TO_PLAY_FLAG?BLACK:WHITE;
@@ -215,6 +219,8 @@ int __finalizeAndUndo(ChessMoveGenerator* self, int validate){
         ChessBoard_unmakeMove(self->board);
         return 0;
     }
+    if(self->afterGen!=NULL)
+        (*self->afterGen)(self->board);
     self->next[(self->nextCount)++] = 
         ChessBoard_unmakeMove(self->board);
     return 1;
