@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <limits.h>
 #define PAWN_VALUE      100
 #define KNIGHT_VALUE    300
 #define BISHOP_VALUE    300
 #define ROOK_VALUE      500
 #define QUEEN_VALUE     1000
+#define MOBILITY_VALUE  10
 
 ChessMoveGenerator* __gen; //a private generator just for evaluations
 
@@ -54,7 +56,6 @@ void ChessHNode_delete(ChessHNode* self){
 void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
     assert(self->state==UN_EVAL);
     int eval = 0;
-    int i;
     //just add and subtract the values of each piece
     eval+=board->pieceSets[WHITE]->piecesCounts[PAWN_INDEX]*PAWN_VALUE;
     eval+=board->pieceSets[WHITE]->piecesCounts[KNIGHT_INDEX]*KNIGHT_VALUE;
@@ -73,17 +74,48 @@ void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
     self->type = ESTIMATE;
 }
 
+//called if a node has no children
+void __judgeTeminal(ChessHNode* self){
+    self->state = FULL_EVAL;
+    self->type = ABSOLUTE;
+    if(self->inCheck){
+        if(self->toPlay==WHITE)
+            self->evaluation = INT_MIN;
+        else
+            self->evaluation = INT_MAX;
+    }
+    else
+        self->evaluation = 0;
+}
+
+//slow, should only be done on leaf nodes
 void ChessHNode_doFullEvaluation(ChessHNode* self, ChessBoard* board){
-    assert(self->state != FULL_EVAL)
+    assert(self->state != FULL_EVAL);
     if(self->state==UN_EVAL)
         ChessHNode_doPreEvaluation(self, board);
-    //TODO test for checkmate, stalemate
+    ChessMoveGenerator_generateMoves(__gen, self->inCheck, NULL);
+    if(__gen->nextCount==0){
+        __judgeTeminal(self);
+        return;
+    }
     self->state = FULL_EVAL;
+    //approximate mobility of the last player by their mobility last move
+    int whiteMobility, blackMobility;
+    if(self->toPlay==WHITE){
+        whiteMobility = __gen->nextCount;
+        blackMobility = self->parent==NULL?0:self->parent->childrenCount;
+    }
+    else{
+        blackMobility = __gen->nextCount;
+        whiteMobility = self->parent==NULL?0:self->parent->childrenCount;
+    }
+    self->evaluation+=whiteMobility;
+    self->evaluation-=blackMobility;
 }
 
 ChessHNode* __tempChildren[MOVE_GEN_MAX_ALLOCATED];
 int __tempChildrenCount;
-ChessBoard* __tempParent;
+ChessHNode* __tempParent;
 void __pushAndPreEvalNewTempChild(ChessBoard* board){
     ChessHNode* child = ChessHNode_new(__tempParent, board);
     ChessHNode_doPreEvaluation(child, board);
@@ -98,17 +130,41 @@ void __pushAndPreEvalNewTempChild(ChessBoard* board){
     __tempChildren[i+1] = child;
     __tempChildrenCount++;
 }
+void __pushAndFullEvalNewTempChild(ChessBoard* board){
+    ChessHNode* child = ChessHNode_new(__tempParent, board);
+    ChessHNode_doFullEvaluation(child, board);
+    //unsorted push
+    __tempChildren[__tempChildrenCount++] = child;
+}
 
 void ChessHNode_expandBranches(ChessHNode* self, ChessMoveGenerator* gen){
     assert(self->children==NULL);
     __tempChildrenCount = 0;
+    __tempParent = self;
     ChessMoveGenerator_generateMoves(gen, self->inCheck, &__pushAndPreEvalNewTempChild);
+    self->childrenCount = __tempChildrenCount;
+    if(__tempChildrenCount==0){
+        __judgeTeminal(self);
+        return;
+    }
     self->children = (ChessHNode**)malloc(sizeof(ChessHNode*)*__tempChildrenCount);
     int i;
     for(i=0; i<__tempChildrenCount; i++);
         self->children[i] = __tempChildren[i];
-    self->childrenCount = __tempChildrenCount;
 }
 
 void ChessHNode_expandLeaves(ChessHNode* self, ChessMoveGenerator* gen){
+    assert(self->children==NULL);
+    __tempChildrenCount = 0;
+    __tempParent = self;
+    ChessMoveGenerator_generateMoves(gen, self->inCheck, &__pushAndFullEvalNewTempChild);
+    self->childrenCount = __tempChildrenCount;
+    if(__tempChildrenCount==0){
+        __judgeTeminal(self);
+        return;
+    }
+    self->children = (ChessHNode**)malloc(sizeof(ChessHNode*)*__tempChildrenCount);
+    int i;
+    for(i=0; i<__tempChildrenCount; i++);
+        self->children[i] = __tempChildren[i];
 }
