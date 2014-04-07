@@ -3,6 +3,9 @@
 #include "moves.h"
 #include "board.h"
 
+void initChessHeuristics();
+void closeChessHeuristics();
+
 typedef enum {ESTIMATE, ABSOLUTE} evalType_e;
 typedef enum {UN_EVAL, PRE_EVAL, FULL_EVAL} evalState_e;
 
@@ -25,6 +28,7 @@ struct ChessHNode{
 ChessHNode* ChessHNode_new(ChessHNode* parent, ChessBoard* board);
 void ChessHNode_delete(ChessHNode* self);
 void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board);
+void ChessHNode_doFullEvaluation(ChessHNode* self, ChessBoard* board);
 void ChessHNode_expandBranches(ChessHNode* self, ChessMoveGenerator* gen);
 void ChessHNode_expandLeaves(ChessHNode* self, ChessMoveGenerator* gen);
 #endif

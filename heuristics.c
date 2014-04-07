@@ -8,6 +8,16 @@
 #define ROOK_VALUE      500
 #define QUEEN_VALUE     1000
 
+ChessMoveGenerator* __gen; //a private generator just for evaluations
+
+void initChessHeuristics(ChessBoard* board){
+    __gen = ChessMoveGenerator_new(board);
+}
+
+void closeChessHeuristics(){
+    ChessMoveGenerator_delete(__gen);
+}
+
 ChessHNode* ChessHNode_new(ChessHNode* parent, ChessBoard* board){
     ChessHNode* self = (ChessHNode*)malloc(
         sizeof(ChessHNode));
@@ -63,6 +73,14 @@ void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
     self->type = ESTIMATE;
 }
 
+void ChessHNode_doFullEvaluation(ChessHNode* self, ChessBoard* board){
+    assert(self->state != FULL_EVAL)
+    if(self->state==UN_EVAL)
+        ChessHNode_doPreEvaluation(self, board);
+    //TODO test for checkmate, stalemate
+    self->state = FULL_EVAL;
+}
+
 ChessHNode* __tempChildren[MOVE_GEN_MAX_ALLOCATED];
 int __tempChildrenCount;
 ChessBoard* __tempParent;
@@ -90,4 +108,7 @@ void ChessHNode_expandBranches(ChessHNode* self, ChessMoveGenerator* gen){
     for(i=0; i<__tempChildrenCount; i++);
         self->children[i] = __tempChildren[i];
     self->childrenCount = __tempChildrenCount;
+}
+
+void ChessHNode_expandLeaves(ChessHNode* self, ChessMoveGenerator* gen){
 }
