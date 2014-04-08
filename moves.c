@@ -81,6 +81,7 @@ void __initIterValues(ChessMoveGenerator* self, int inCheck,
     flag_t flags = self->board->flags;
     self->toPlay = flags&TO_PLAY_FLAG?BLACK:WHITE;
     self->curSet = self->board->pieceSets[(int)(self->toPlay)];
+    assert(self->curSet!=NULL);
     self->inCheck = inCheck; 
 }
 
@@ -259,6 +260,8 @@ void __generatePawnCapture(ChessMoveGenerator* self,
 }
 void __generatePawnMoves(ChessMoveGenerator* self){
     int i, rank, file;
+    assert(self!=NULL);
+    assert(self->curSet!=NULL);
     int size = self->curSet->piecesCounts[PAWN_INDEX];
     int pawnDirection = self->toPlay==WHITE?1:-1;
     int pawnHomeRank = self->toPlay==WHITE?1:6;

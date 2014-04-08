@@ -106,7 +106,7 @@ void __uncapturePiece(ChessBoard* board){
     __addPiece(board, piece);
 }
 
-ChessBoard* ChessBoard_new(char* fen){
+ChessBoard* ChessBoard_new(const char* fen){
     ChessBoard* board = (ChessBoard*)malloc(sizeof(ChessBoard));
     board->movesCount = 0;
     board->capturedCount = 0;

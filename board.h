@@ -97,7 +97,7 @@ struct ChessBoard{
     flag_t flags;
     zob_hash_t hash;
 };
-ChessBoard* ChessBoard_new(char* fen);
+ChessBoard* ChessBoard_new(const char* fen);
 void ChessBoard_delete(ChessBoard* self);
 void ChessBoard_makeMove(ChessBoard* self, move_t move);
 move_t ChessBoard_unmakeMove(ChessBoard* self);

@@ -3,7 +3,7 @@
 #include "moves.h"
 #include "board.h"
 
-void initChessHeuristics();
+void initChessHeuristics(ChessBoard* board);
 void closeChessHeuristics();
 
 typedef enum {ESTIMATE, ABSOLUTE} evalType_e;

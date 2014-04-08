@@ -149,7 +149,7 @@ void ChessHNode_expandBranches(ChessHNode* self, ChessMoveGenerator* gen){
     }
     self->children = (ChessHNode**)malloc(sizeof(ChessHNode*)*__tempChildrenCount);
     int i;
-    for(i=0; i<__tempChildrenCount; i++);
+    for(i=0; i<__tempChildrenCount; i++)
         self->children[i] = __tempChildren[i];
 }
 
@@ -165,6 +165,6 @@ void ChessHNode_expandLeaves(ChessHNode* self, ChessMoveGenerator* gen){
     }
     self->children = (ChessHNode**)malloc(sizeof(ChessHNode*)*__tempChildrenCount);
     int i;
-    for(i=0; i<__tempChildrenCount; i++);
+    for(i=0; i<__tempChildrenCount; i++)
         self->children[i] = __tempChildren[i];
 }
