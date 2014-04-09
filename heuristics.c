@@ -45,13 +45,17 @@ ChessHNode* ChessHNode_new(ChessHNode* parent, ChessBoard* board){
     return self;
 }
 void ChessHNode_delete(ChessHNode* self){
+    ChessHNode_deleteChildren(self);
+    free(self);
+}
+void ChessHNode_deleteChildren(ChessHNode* self){
     if(self->children!=NULL){
         int i;
         for(i = 0; i < self->childrenCount; i++)
             ChessHNode_delete(self->children[i]);
         free(self->children);
+        self->children = NULL;
     }
-    free(self);
 }
 void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
     assert(self->state==UN_EVAL);
@@ -163,7 +167,7 @@ void ChessHNode_expandLeaves(ChessHNode* self, ChessMoveGenerator* gen){
         __judgeTeminal(self);
         return;
     }
-    self->children = (ChessHNode**)malloc(sizeof(ChessHNode*)*__tempChildrenCount);
+    self->children = (ChessHNode**)malloc((sizeof(ChessHNode*)*__tempChildrenCount));
     int i;
     for(i=0; i<__tempChildrenCount; i++)
         self->children[i] = __tempChildren[i];

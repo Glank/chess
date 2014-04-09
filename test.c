@@ -6,6 +6,7 @@
 #include "zobrist.h"
 #include "moves.h"
 #include "heuristics.h"
+#include "search.h"
 #define LOC(str) (((str[1]-'1')<<3)+((str[0]-'a')))
 #define POS_1_PERFT3 8902
 #define POS_2_PERFT3 97862
@@ -131,7 +132,30 @@ int runHeuristicsTests(){
     return 0;
 }
 
+int runSearchTests(){
+    initZobrist();
+    ChessBoard* board = ChessBoard_new(POS_2);
+    initChessHeuristics(board);
+
+    ChessBoard_print(board);
+    move_t line[MAX_LINE_LENGTH];
+    int length;
+    int eval = getBestLine(board, 2, line, &length);
+    printf("Eval: %d\n", eval);
+    printf("Length: %d\n", length);
+    int i;
+    for(i = 0; i < length; i++){
+        printf("%x\n", line[i]);
+        ChessBoard_print(board);
+        ChessBoard_makeMove(board, line[i]);
+        ChessBoard_print(board);
+    }
+
+    closeChessHeuristics();
+    closeZobrist();
+}
+
 int main(void){
-    runHeuristicsTests();
+    runSearchTests();
     return 0;
 }

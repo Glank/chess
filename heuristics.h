@@ -27,6 +27,7 @@ struct ChessHNode{
 };
 ChessHNode* ChessHNode_new(ChessHNode* parent, ChessBoard* board);
 void ChessHNode_delete(ChessHNode* self);
+void ChessHNode_deleteChildren(ChessHNode* self);
 void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board);
 void ChessHNode_doFullEvaluation(ChessHNode* self, ChessBoard* board);
 void ChessHNode_expandBranches(ChessHNode* self, ChessMoveGenerator* gen);

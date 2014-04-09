@@ -1,8 +1,11 @@
 CFLAGS=-Wall -g
-OBJS=board.o zobrist.o moves.o strutl.o heuristics.o
+OBJS=board.o zobrist.o moves.o strutl.o heuristics.o search.o
 TEST_OBJS=$(OBJS)
 
-all:    test	
+all:    test
+
+search.o: search.h search.c heuristics.h moves.h board.h
+	$(CC) $(CFLAGS) -c search.c
 
 heuristics.o: heuristics.h heuristics.c moves.h board.h
 	$(CC) $(CFLAGS) -c heuristics.c
