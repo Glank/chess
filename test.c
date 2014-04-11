@@ -140,17 +140,18 @@ int runSearchTests(){
     ChessBoard_print(board);
     move_t line[MAX_LINE_LENGTH];
     int length;
-    int eval = getBestLine(board, 2, line, &length);
+    int eval = getBestLine(board, 4, line, &length);
     printf("Eval: %d\n", eval);
     printf("Length: %d\n", length);
     int i;
     for(i = 0; i < length; i++){
         printf("%x\n", line[i]);
-        ChessBoard_print(board);
         ChessBoard_makeMove(board, line[i]);
         ChessBoard_print(board);
     }
 
+
+    ChessBoard_delete(board);
     closeChessHeuristics();
     closeZobrist();
 }

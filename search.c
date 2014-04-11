@@ -35,7 +35,7 @@ int alphabeta(ChessHNode* node, int depth, int alpha, int beta, move_t* lineout,
         return node->evaluation;
     }
     //if maximizing player
-    int i, eval, best;
+    int i, eval, best=0;
     ChessHNode* child;
     move_t lines[node->childrenCount][depth];
     int lineLengths[node->childrenCount];
@@ -55,7 +55,7 @@ int alphabeta(ChessHNode* node, int depth, int alpha, int beta, move_t* lineout,
         lineout[0] = node->children[best]->move;
         *lineoutLength = lineLengths[best]+1;
         for(i=1; i < *lineoutLength; i++)
-            lineout[i] = lines[best][i-1];
+            lineout[i] = lines[best][i];
         ChessHNode_deleteChildren(node);
         return alpha;
     }
@@ -76,7 +76,7 @@ int alphabeta(ChessHNode* node, int depth, int alpha, int beta, move_t* lineout,
         lineout[0] = node->children[best]->move;
         *lineoutLength = lineLengths[best]+1;
         for(i=1; i < *lineoutLength; i++)
-            lineout[i] = lines[best][i-1];
+            lineout[i] = lines[best][i];
         ChessHNode_deleteChildren(node);
         return beta;
     }
