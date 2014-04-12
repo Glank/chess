@@ -352,7 +352,7 @@ char __getChar(ChessBoard* self, location_t loc){
     assert(loc<64);
     ChessPiece* piece = self->squares[loc];
     if(piece==NULL)
-        return ((GET_RANK(loc)^GET_FILE(loc))%2)?'+':'#';
+        return ((GET_RANK(loc)^GET_FILE(loc))%2)?' ':'+';
     return __getPieceChar(piece);
 }
 void __movePiece(ChessBoard* self, ChessPiece* piece,

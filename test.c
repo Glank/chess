@@ -7,6 +7,7 @@
 #include "moves.h"
 #include "heuristics.h"
 #include "search.h"
+#include "narrator.h"
 #define LOC(str) (((str[1]-'1')<<3)+((str[0]-'a')))
 #define POS_1_PERFT3 8902
 #define POS_2_PERFT3 97862
@@ -144,8 +145,11 @@ int runSearchTests(){
     printf("Eval: %d\n", eval);
     printf("Length: %d\n", length);
     int i;
+    char moveOut[10];
+    int moveOutSize;
     for(i = 0; i < length; i++){
-        printf("%x\n", line[i]);
+        toAlgebraicNotation(line[i], board, moveOut, &moveOutSize);
+        printf("%s\n", moveOut);
         ChessBoard_makeMove(board, line[i]);
         ChessBoard_print(board);
     }
