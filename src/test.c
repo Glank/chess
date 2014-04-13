@@ -158,6 +158,7 @@ int runSearchTests(){
     ChessBoard_delete(board);
     closeChessHeuristics();
     closeZobrist();
+    return 0;
 }
 
 int main(void){
