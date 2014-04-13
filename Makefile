@@ -1,35 +1,45 @@
 CFLAGS=-Wall -g
-OBJS=board.o zobrist.o moves.o strutl.o heuristics.o search.o narrator.o
-TEST_OBJS=$(OBJS)
+SRC=src
+TEST_SRC=src
+BLD=build
+OBJS=$(BLD)/board.o
+OBJS+=$(BLD)/zobrist.o
+OBJS+=$(BLD)/moves.o
+OBJS+=$(BLD)/strutl.o
+OBJS+=$(BLD)/heuristics.o
+OBJS+=$(BLD)/search.o
+OBJS+=$(BLD)/narrator.o
 
-all:    test
+all: test
 
-narrator.o: narrator.h narrator.c moves.h board.h
-	$(CC) $(CFLAGS) -c narrator.c
+$(BLD)/narrator.o: $(SRC)/narrator.h $(SRC)/narrator.c $(SRC)/moves.h $(SRC)/board.h
+	$(CC) $(CFLAGS) -c $(SRC)/narrator.c -o $(BLD)/narrator.o
 
-search.o: search.h search.c heuristics.h moves.h board.h
-	$(CC) $(CFLAGS) -c search.c
+$(BLD)/search.o: $(SRC)/search.h $(SRC)/search.c $(SRC)/heuristics.h $(SRC)/moves.h $(SRC)/board.h
+	$(CC) $(CFLAGS) -c $(SRC)/search.c -o $(BLD)/search.o
 
-heuristics.o: heuristics.h heuristics.c moves.h board.h
-	$(CC) $(CFLAGS) -c heuristics.c
+$(BLD)/heuristics.o: $(SRC)/heuristics.h $(SRC)/heuristics.c $(SRC)/moves.h $(SRC)/board.h
+	$(CC) $(CFLAGS) -c $(SRC)/heuristics.c -o $(BLD)/heuristics.o
 
-strutl.o: strutl.h strutl.c
-	$(CC) $(CFLAGS) -c strutl.c
+$(BLD)/strutl.o: $(SRC)/strutl.h $(SRC)/strutl.c
+	$(CC) $(CFLAGS) -c $(SRC)/strutl.c -o $(BLD)/strutl.o
 
-moves.o: moves.h moves.c board.h
-	$(CC) $(CFLAGS) -c moves.c
+$(BLD)/moves.o: $(SRC)/moves.h $(SRC)/moves.c $(SRC)/board.h
+	$(CC) $(CFLAGS) -c $(SRC)/moves.c -o $(BLD)/moves.o
 
-zobrist.o: zobrist.h zobrist.c
-	$(CC) $(CFLAGS) -c zobrist.c
+$(BLD)/zobrist.o: $(SRC)/zobrist.h $(SRC)/zobrist.c
+	$(CC) $(CFLAGS) -c $(SRC)/zobrist.c -o $(BLD)/zobrist.o
 
-board.o: board.h board.c zobrist.h strutl.h
-	$(CC) $(CFLAGS) -c board.c
+$(BLD)/board.o: $(SRC)/board.h $(SRC)/board.c $(SRC)/zobrist.h $(SRC)/strutl.h
+	$(CC) $(CFLAGS) -c $(SRC)/board.c -o $(BLD)/board.o
 
-test: $(TEST_OBJS) test.c
-	$(CC) $(CFLAGS) -c test.c
-	$(CC) $(CFLAGS) $(TEST_OBJS) test.o -o test
+test: $(OBJS) $(TEST_SRC)/test.c
+	$(CC) $(CFLAGS) -c $(SRC)/test.c -o $(BLD)/test.o
+	$(CC) $(CFLAGS) $(OBJS) $(BLD)/test.o -o test
 	valgrind --leak-check=full ./test
 	rm test
 
 clean:
-	rm -f *.o test
+	rm -f build/* 
+	rm -f test
+	rm -f chess
