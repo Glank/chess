@@ -141,7 +141,7 @@ int runSearchTests(){
     ChessBoard_print(board);
     move_t line[MAX_LINE_LENGTH];
     int length;
-    int eval = getBestLine(board, 4, line, &length);
+    int eval = getBestLine(board, 3, line, &length);
     printf("Eval: %d\n", eval);
     printf("Length: %d\n", length);
     int i;
