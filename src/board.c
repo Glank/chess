@@ -117,6 +117,7 @@ ChessBoard* ChessBoard_new(const char* fen){
     board->pieceSets[(int)BLACK] = ChessPieceSet_new();
     board->hash = 0;
     board->flags = 0;
+    board->fiftyMoveCount = 0;
 
     //read FEN squares
     ChessPiece* piece;
@@ -203,14 +204,20 @@ void ChessBoard_delete(ChessBoard* self){
 }
 void ChessBoard_makeMove(ChessBoard* self, move_t move){
     //push the move onto the move stack
-    self->prevHashes[self->movesCount] = self->hash;
-    self->prevFlags[self->movesCount] = self->flags;
+    BoardBackup* backup = &(self->backups[self->movesCount]);
+    backup->hash = self->hash;
+    backup->flags = self->flags;
+    backup->fiftyMoveCount = self->fiftyMoveCount;
     self->moves[self->movesCount++] = move;
+    self->fiftyMoveCount++;
     __toggleToPlay(self);
     __clearEnPassantFlags(self);
     int meta = GET_META(move);
     location_t from = GET_FROM(move);
     location_t to = GET_TO(move);
+    if((self->squares[from]->type==PAWN) || (meta&CAPTURE_MOVE_FLAG)){
+        self->fiftyMoveCount=0;
+    }
     int rank, file;
     //do special moves
     switch(meta){
@@ -313,8 +320,7 @@ void ChessBoard_makeMove(ChessBoard* self, move_t move){
 move_t ChessBoard_unmakeMove(ChessBoard* self){
     assert(self->movesCount!=0);
     move_t move = self->moves[self->movesCount-1];
-    flag_t prevFlags = self->prevFlags[self->movesCount-1];
-    zob_hash_t prevHash = self->prevHashes[--(self->movesCount)];
+    BoardBackup* backup = &(self->backups[--(self->movesCount)]);
     int meta = GET_META(move);
     location_t from = GET_FROM(move);
     location_t to = GET_TO(move);
@@ -342,8 +348,9 @@ move_t ChessBoard_unmakeMove(ChessBoard* self){
             RANK_FILE(rank, 3), RANK_FILE(rank, 0));
     }
     //restore flags and hash
-    self->flags = prevFlags;
-    self->hash = prevHash;
+    self->flags = backup->flags;
+    self->hash = backup->hash;
+    self->fiftyMoveCount = backup->fiftyMoveCount;
     return move;
 }
 char __getChar(ChessBoard* self, location_t loc){
@@ -458,12 +465,6 @@ void ChessBoard_longPrint(ChessBoard* self){
     printf("Hash: %x\n", self->hash);
     printf("Moves:\n");
     int i;
-    for(i = 0; i < self->movesCount; i++){
-        printf("%d)\t", i);
-        printf("Move:%x\t", self->moves[i]);
-        printf("Prev Flags:%x\t", self->prevFlags[i]);
-        printf("Prev Hash:%x\n",  self->prevHashes[i]);
-    }
     printf("Captured Stack:\n");
     for(i = 0; i < self->capturedCount; i++){
         printf("%d)\t%c\n",i,

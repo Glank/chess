@@ -20,6 +20,22 @@ void closeChessHeuristics(){
     ChessMoveGenerator_delete(__gen);
 }
 
+int ChessBoard_isInOptionalDraw(ChessBoard* board){
+    if(board->fiftyMoveCount>=50)
+        return 1;
+    int i;
+    int count=1;
+    for(i = 0; i < board->fiftyMoveCount; i++){
+        if(board->backups[i].hash==board->hash)
+            count++;
+    }
+    //this is slopy and possibly an error, but it's way quicker than
+    //a perfect check
+    if(count>=3)
+        return 1;
+    return 0;
+}
+
 ChessHNode* ChessHNode_new(ChessHNode* parent, ChessBoard* board){
     ChessHNode* self = (ChessHNode*)malloc(
         sizeof(ChessHNode));
@@ -59,6 +75,12 @@ void ChessHNode_deleteChildren(ChessHNode* self){
 }
 void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
     assert(self->state==UN_EVAL);
+    if(ChessBoard_isInOptionalDraw(board)){
+        self->evaluation = 0;
+        self->state = FULL_EVAL;
+        self->type = ESTIMATE;
+        return;
+    }
     int eval = 0;
     //just add and subtract the values of each piece
     eval+=board->pieceSets[WHITE]->piecesCounts[PAWN_INDEX]*PAWN_VALUE;
@@ -94,7 +116,8 @@ void __judgeTeminal(ChessHNode* self){
 
 //slow, should only be done on leaf nodes
 void ChessHNode_doFullEvaluation(ChessHNode* self, ChessBoard* board){
-    assert(self->state != FULL_EVAL);
+    if(self->state == FULL_EVAL)
+        return;
     if(self->state==UN_EVAL)
         ChessHNode_doPreEvaluation(self, board);
     ChessMoveGenerator_generateMoves(__gen, self->inCheck, NULL);
