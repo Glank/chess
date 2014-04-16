@@ -15,6 +15,7 @@ int main(int argc, char** argv){
     ChessBoard* board = ChessBoard_new(argv[1]);
     initChessHeuristics(board);
 
+    ChessBoard_print(board);
     
     int depth = 4;
     if(argc>2)

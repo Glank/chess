@@ -135,13 +135,13 @@ int runHeuristicsTests(){
 
 int runSearchTests(){
     initZobrist();
-    ChessBoard* board = ChessBoard_new(POS_2);
+    ChessBoard* board = ChessBoard_new("4k3/8/8/5K2/2R5/8/8/8 w - - 0 1");
     initChessHeuristics(board);
 
     ChessBoard_print(board);
     move_t line[MAX_LINE_LENGTH];
     int length;
-    int eval = getBestLine(board, 3, line, &length);
+    int eval = getBestLine(board, 5, line, &length);
     printf("Eval: %d\n", eval);
     printf("Length: %d\n", length);
     int i;
@@ -152,6 +152,7 @@ int runSearchTests(){
         printf("%s\n", moveOut);
         ChessBoard_makeMove(board, line[i]);
         ChessBoard_print(board);
+        printf("%x\n", board->hash);
     }
 
 

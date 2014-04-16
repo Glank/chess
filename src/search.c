@@ -23,6 +23,8 @@ int alphabeta(ChessHNode* node, int depth, int quiecense, int deepQuiecense,
     if(depth==0){
         int delta = (node->evaluation)-(node->parent->evaluation);
         delta = delta<0?-delta:delta;
+        if(node->inCheck)
+            delta = INT_MAX;
         if(delta>=100 && quiecense){
             depth++; //not quiet
             quiecense--;
@@ -50,7 +52,7 @@ int alphabeta(ChessHNode* node, int depth, int quiecense, int deepQuiecense,
     move_t lines[node->childrenCount][depth+quiecense+deepQuiecense];
     int lineLengths[node->childrenCount];
     if(node->toPlay==WHITE){
-        for(i=0; i<node->childrenCount; i++){
+        for(i=node->childrenCount-1; i>=0; i--){
             child = node->children[i];
             ChessBoard_makeMove(board, child->move);
             eval = alphabeta(child, depth-1, quiecense, deepQuiecense, 
@@ -60,7 +62,7 @@ int alphabeta(ChessHNode* node, int depth, int quiecense, int deepQuiecense,
                 alpha = eval;
                 best = i;
             }
-            if(beta <= alpha)
+            if(beta < alpha)
                 break;
         }
         lineout[0] = node->children[best]->move;
@@ -82,7 +84,7 @@ int alphabeta(ChessHNode* node, int depth, int quiecense, int deepQuiecense,
                 beta = eval;
                 best = i;
             }
-            if(beta <= alpha)
+            if(beta < alpha)
                 break;
         }
         lineout[0] = node->children[best]->move;

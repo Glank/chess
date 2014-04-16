@@ -34,6 +34,9 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
     location_t to = GET_TO(move);
     int meta = GET_META(move);
     int i = 0;
+    ChessBoard_makeMove(board, move);
+    int isInCheck = ChessBoard_testForCheck(board);
+    ChessBoard_unmakeMove(board);
 
     if(meta==KING_CASTLE_MOVE){
         char* notation = "O-O\0";
@@ -56,7 +59,6 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
         out[i++] = 'K';
     else{
         ChessMoveGenerator* gen = ChessMoveGenerator_new(board);
-        int isInCheck = ChessBoard_testForCheck(board);
         ChessMoveGenerator_generateMoves(gen, isInCheck, NULL);
         //for each other move, check to see if there are multiple pieces
         //of this piece's type that can move to the 'to' square.
@@ -104,6 +106,8 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
     //write destination
     out[i++] = __fileToChar(GET_FILE(to));
     out[i++] = __rankToChar(GET_RANK(to));
+    if(isInCheck)
+        out[i++] = '+';
     out[i] = '\0';
     (*outSize) = i;
 }

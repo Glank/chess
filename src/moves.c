@@ -164,7 +164,7 @@ int __testForCheck(ChessBoard* board, color_e color){
             if(rankDelta!=0) rankDelta = rankDelta>0?1:-1;
             rank = GET_RANK(rook->location)+rankDelta;
             file = GET_FILE(rook->location)+fileDelta;
-            while(rank!=kingRank && file!=kingFile){
+            while(rank!=kingRank || file!=kingFile){
                 if(board->squares[RANK_FILE(rank,file)]!=NULL)
                     break;
                 rank+=rankDelta;
