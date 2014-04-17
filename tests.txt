@@ -1,0 +1,3 @@
+./chess "6k1/p2nq2p/8/2pb4/5p1P/1P3N2/PB2Q2K/R5b1 w - - 0 0" 3
+./chess "5Bk1/p1Q2ppp/4p3/1b6/4PN2/P1P2P1K/6PP/4q3 b - - 0 0" 3
+./chess "1r4k1/pP1N4/P1p2p2/2b1p3/4P3/8/R1P1nr2/1R5K b - - 0 1"
