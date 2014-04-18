@@ -36,10 +36,11 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
     int i = 0;
     ChessBoard_makeMove(board, move);
     int isInCheck = ChessBoard_testForCheck(board);
-    ChessBoard_unmakeMove(board);
     ChessMoveGenerator* gen = ChessMoveGenerator_new(board);
     ChessMoveGenerator_generateMoves(gen, isInCheck, NULL);
     int isInCheckmate = isInCheck&&(gen->nextCount==0);
+    ChessBoard_unmakeMove(board);
+    ChessMoveGenerator_generateMoves(gen, ChessBoard_testForCheck(board), NULL);
 
     if(meta==KING_CASTLE_MOVE){
         char* notation = "O-O";

@@ -25,6 +25,8 @@ int alphabeta(ChessHNode* node, int depth, int quiecense, int deepQuiecense,
         delta = delta<0?-delta:delta;
         if(node->inCheck)
             delta = INT_MAX;
+        else if(node->parent != NULL && node->parent->inCheck)
+            delta = INT_MAX;
         if(delta>=100 && quiecense){
             depth++; //not quiet
             quiecense--;
