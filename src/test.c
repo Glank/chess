@@ -20,6 +20,9 @@
 #define POS_4 "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1"
 #define POS_5 "rnbqkb1r/pp1p1ppp/2p5/4P3/2B5/8/PPP1NnPP/RNBQK2R w KQkq - 0 6"
 #define POS_6 "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10"
+#define POS_7 "6k1/p2nq2p/8/2pb4/5p1P/1P3N2/PB2Q2K/R5b1 w - - 0 0"
+#define POS_7_1 "6k1/p6p/8/2pbQ3/5p1q/1P3N2/PB4K1/R5b1 w - - 0 0"
+#define POS_8 "5Bk1/p1Q2ppp/4p3/1b6/4PN2/P1P2P1K/6PP/4q3 b - - 0 0"
 const char* PERFT_STARTS[] = {FEN_START, POS_2, POS_3, POS_4, POS_5, POS_6};
 const int PERFT3_VALUES[] = {POS_1_PERFT3, POS_2_PERFT3, POS_3_PERFT3, 
     POS_4_PERFT3, POS_5_PERFT3, POS_6_PERFT3};
@@ -133,15 +136,15 @@ int runHeuristicsTests(){
     return 0;
 }
 
-int runSearchTests(){
+int runSearchTest(char* start, int depth){
     initZobrist();
-    ChessBoard* board = ChessBoard_new("4k3/8/8/5K2/2R5/8/8/8 w - - 0 1");
+    ChessBoard* board = ChessBoard_new(start);
     initChessHeuristics(board);
 
     ChessBoard_print(board);
     move_t line[MAX_LINE_LENGTH];
     int length;
-    int eval = getBestLine(board, 5, line, &length);
+    int eval = getBestLine(board, depth, line, &length);
     printf("Eval: %d\n", eval);
     printf("Length: %d\n", length);
     int i;
@@ -155,14 +158,46 @@ int runSearchTests(){
         printf("%x\n", board->hash);
     }
 
-
     ChessBoard_delete(board);
     closeChessHeuristics();
     closeZobrist();
     return 0;
 }
 
+int runSearchTests(){
+    runSearchTest(POS_8, 4);
+    return 0;
+}
+
+int runGenTest(char* start){
+    initZobrist();
+    ChessBoard* board = ChessBoard_new(start);
+    ChessMoveGenerator* gen = ChessMoveGenerator_new(board);
+    ChessMoveGenerator_generateMoves(gen, ChessBoard_testForCheck(board), NULL);
+
+    ChessBoard_print(board);
+    printf("###############\n");
+    char moveOut[10];
+    int moveOutSize;
+    int i;
+    for(i = 0; i < gen->nextCount; i++){
+        toAlgebraicNotation(gen->next[i], board, moveOut, &moveOutSize);
+        printf("%s\n", moveOut);
+        printf("%x\n", board->hash);
+        ChessBoard_makeMove(board, gen->next[i]);
+        ChessBoard_print(board);
+        printf("\n");
+        ChessBoard_unmakeMove(board);
+    }
+
+    ChessBoard_delete(board);
+    ChessMoveGenerator_delete(gen);
+    closeZobrist();
+    return 0;
+}
+
 int main(void){
+    //runGenTest(POS_7_1);
     runSearchTests();
     return 0;
 }

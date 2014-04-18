@@ -41,21 +41,13 @@ void ChessMoveGenerator_generateMoves(
     ChessMoveGenerator* self, int inCheck,
     void (*afterGen)(ChessBoard*)){
     __initIterValues(self, inCheck, afterGen);
-    //printf("gen pawn\n");
     __generatePawnMoves(self);
-    //printf("gen bishop\n");
     __generateBishopMoves(self);
-    //printf("gen rook\n");
     __generateRookMoves(self);
-    //printf("gen queen\n");
     __generateQueenMoves(self);
-    //printf("gen knight\n");
     __generateKnightMoves(self);
-    //printf("gen king\n");
     __generateKingMoves(self);
-    //printf("gen en passant\n");
     __generateEnPassant(self);
-    //printf("gen castling\n");
     __generateCastlings(self);
 }
 
@@ -134,7 +126,7 @@ int __testForCheck(ChessBoard* board, color_e color){
             //the king is on a diagonal with this opposing bishop
             //check every square inbetween to see if the bishop 
             //is blocked 
-            assert(!(rankDelta==0));
+            assert(rankDelta!=0);
             rankDelta = rankDelta>0?1:-1;
             fileDelta = fileDelta>0?1:-1;
             rank = GET_RANK(bishop->location)+rankDelta;
@@ -424,15 +416,21 @@ void __generateKnightMoves(ChessMoveGenerator* self){
     ChessPiece* knight;
     for(i=0;i<size;i++){
         knight = self->curSet->piecesByType[KNIGHT_INDEX][i];
-        if(__generateSimpleMove(self, knight, 2, -1, 1)==0 &&
-            !self->inCheck) continue;
-        __generateSimpleMove(self, knight, 2, 1, self->inCheck);
-        __generateSimpleMove(self, knight, 1, 2, self->inCheck);
-        __generateSimpleMove(self, knight, -1, 2, self->inCheck);
-        __generateSimpleMove(self, knight, -2, 1, self->inCheck);
-        __generateSimpleMove(self, knight, -2, -1, self->inCheck);
-        __generateSimpleMove(self, knight, -1, -2, self->inCheck);
-        __generateSimpleMove(self, knight, 1, -2, self->inCheck);
+        int validated = __generateSimpleMove(self, knight, 2, -1, 1);
+        if(validated==0 && !self->inCheck) continue;
+        validated = __generateSimpleMove(self, knight, 2, 1, validated!=1 || self->inCheck);
+        if(validated==0 && !self->inCheck) continue;
+        validated = __generateSimpleMove(self, knight, 1, 2, validated!=1 || self->inCheck);
+        if(validated==0 && !self->inCheck) continue;
+        validated = __generateSimpleMove(self, knight, -1, 2, validated!=1 || self->inCheck);
+        if(validated==0 && !self->inCheck) continue;
+        validated = __generateSimpleMove(self, knight, -2, 1, validated!=1 || self->inCheck);
+        if(validated==0 && !self->inCheck) continue;
+        validated = __generateSimpleMove(self, knight, -2, -1, validated!=1 || self->inCheck);
+        if(validated==0 && !self->inCheck) continue;
+        validated = __generateSimpleMove(self, knight, -1, -2, validated!=1 || self->inCheck);
+        if(validated==0 && !self->inCheck) continue;
+        validated = __generateSimpleMove(self, knight, 1, -2, validated!=1 || self->inCheck);
     }
 }
 void __generateKingMoves(ChessMoveGenerator* self){

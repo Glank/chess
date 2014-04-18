@@ -100,7 +100,7 @@ int getBestLine(ChessBoard* board, int depth, move_t* line, int* lineLength){
     __init(board);
     maxDepth = depth;
     ChessHNode* start = ChessHNode_new(NULL, board);
-    int eval = alphabeta(start, depth, depth+1, depth, INT_MIN, INT_MAX, line, lineLength);
+    int eval = alphabeta(start, depth, 1, 2, INT_MIN, INT_MAX, line, lineLength);
     ChessHNode_delete(start);
     __close();
     return eval;

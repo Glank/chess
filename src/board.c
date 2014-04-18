@@ -465,6 +465,13 @@ void ChessBoard_longPrint(ChessBoard* self){
     printf("Hash: %x\n", self->hash);
     printf("Moves:\n");
     int i;
+    for(i = 0; i < self->movesCount; i++){
+        printf("%c%d, %c%d\n", 
+            'a'+GET_FILE(GET_FROM(self->moves[i])),
+            1+GET_RANK(GET_FROM(self->moves[i])),
+            'a'+GET_FILE(GET_TO(self->moves[i])),
+            1+GET_RANK(GET_TO(self->moves[i])));
+    }
     printf("Captured Stack:\n");
     for(i = 0; i < self->capturedCount; i++){
         printf("%d)\t%c\n",i,
