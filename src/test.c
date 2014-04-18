@@ -77,7 +77,9 @@ unsigned long perft(ChessBoard* start, ChessMoveGenerator* gen,
 int runPerftTest(const char* start, int perft3){
     ChessBoard* board = ChessBoard_new(start);
     ChessMoveGenerator* gen = ChessMoveGenerator_new(board);
-    int ret = perft(board, gen, 3)!=perft3;
+    int p = perft(board, gen, 3);
+    int ret = p!=perft3;
+    if(ret) printf("%d - ", p);
     ChessMoveGenerator_delete(gen);
     ChessBoard_delete(board);
     return ret;
@@ -197,7 +199,8 @@ int runGenTest(char* start){
 }
 
 int main(void){
-    //runGenTest(POS_7_1);
-    runSearchTests();
+    //runPerftTests();
+    //runSearchTests();
+    runGenTest(POS_4);
     return 0;
 }

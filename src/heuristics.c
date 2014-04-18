@@ -29,7 +29,7 @@ int ChessBoard_isInOptionalDraw(ChessBoard* board){
         if(board->backups[i].hash==board->hash)
             count++;
     }
-    //this is slopy and possibly an error, but it's way quicker than
+    //this is slopy and will have some errors, but it's way quicker than
     //a perfect check
     if(count>=3)
         return 1;

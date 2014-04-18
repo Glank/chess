@@ -209,15 +209,15 @@ void ChessBoard_makeMove(ChessBoard* self, move_t move){
     backup->flags = self->flags;
     backup->fiftyMoveCount = self->fiftyMoveCount;
     self->moves[self->movesCount++] = move;
-    self->fiftyMoveCount++;
+    if(self->flags&TO_PLAY_FLAG)
+        self->fiftyMoveCount++;
     __toggleToPlay(self);
     __clearEnPassantFlags(self);
     int meta = GET_META(move);
     location_t from = GET_FROM(move);
     location_t to = GET_TO(move);
-    if((self->squares[from]->type==PAWN) || (meta&CAPTURE_MOVE_FLAG)){
+    if((self->squares[from]->type==PAWN) || (meta&CAPTURE_MOVE_FLAG))
         self->fiftyMoveCount=0;
-    }
     int rank, file;
     //do special moves
     switch(meta){
