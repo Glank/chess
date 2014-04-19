@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 #include "narrator.h"
 
 
@@ -131,4 +132,23 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
     (*outSize) = i;
 
     ChessMoveGenerator_delete(gen);
+}
+
+move_t fromAlgebraicNotation(char* notation, ChessBoard* board){
+    ChessMoveGenerator* gen = ChessMoveGenerator_new(board);
+    ChessMoveGenerator_generateMoves(gen, ChessBoard_testForCheck(board), NULL);
+    int i;
+    char match[10];
+    int matchLength;
+    move_t move;
+    for(i = 0; i < gen->nextCount; i++){
+        toAlgebraicNotation(gen->next[i], board, match, &matchLength);
+        if(strcmp(notation, match)==0){
+            move = gen->next[i];
+            break;
+        }
+    }
+    assert(i<gen->nextCount);
+    ChessMoveGenerator_delete(gen);
+    return move;
 }

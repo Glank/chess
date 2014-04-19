@@ -198,9 +198,26 @@ int runGenTest(char* start){
     return 0;
 }
 
+int runAlgebraicNotationTest(){
+    initZobrist();
+    ChessBoard* board = ChessBoard_new(FEN_START);
+
+    move_t move;
+    move = fromAlgebraicNotation("e4\0", board);
+    ChessBoard_makeMove(board, move);
+    move = fromAlgebraicNotation("d5\0", board);
+    ChessBoard_makeMove(board, move);
+    ChessBoard_print(board);
+
+    ChessBoard_delete(board);
+    closeZobrist();
+    return 0;
+}
+
 int main(void){
     //runPerftTests();
     //runSearchTests();
-    runGenTest(POS_4);
+    //runGenTest(POS_4);
+    runAlgebraicNotationTest();
     return 0;
 }
