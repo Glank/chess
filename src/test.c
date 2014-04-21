@@ -8,6 +8,7 @@
 #include "heuristics.h"
 #include "search.h"
 #include "narrator.h"
+#include "threads.h"
 #define LOC(str) (((str[1]-'1')<<3)+((str[0]-'a')))
 #define POS_1_PERFT3 8902
 #define POS_2_PERFT3 97862
@@ -214,10 +215,54 @@ int runAlgebraicNotationTest(){
     return 0;
 }
 
+typedef struct TestThreadArgs TestThreadArgs;
+struct TestThreadArgs{
+    char* name;
+    int* count;
+    ChessMutex* mutex;
+};
+
+void* testRunFunction(void* args){
+    TestThreadArgs* threadArgs = (TestThreadArgs*)args;
+    while(*(threadArgs->count) < 10){
+        ChessMutex_lock(threadArgs->mutex);
+        int oldCount = *(threadArgs->count);
+        ChessThread_sleep(100);
+        *(threadArgs->count) = oldCount+1;
+        printf("%s: %d\n", threadArgs->name, *(threadArgs->count));
+        ChessMutex_unlock(threadArgs->mutex);
+    }
+    return NULL;
+}
+
+int runThreadTests(){
+    TestThreadArgs args1;
+    TestThreadArgs args2;
+    ChessMutex* mutex = ChessMutex_new();
+    int count = 0;
+    args1.name = "Thread 1";
+    args1.mutex = mutex;
+    args1.count = &count;
+    args2.name = "Thread 2";
+    args2.mutex = mutex;
+    args2.count = &count;
+    ChessThread* t1 = ChessThread_new(&testRunFunction);
+    ChessThread* t2 = ChessThread_new(&testRunFunction);
+    ChessThread_start(t1, &args1);
+    ChessThread_start(t2, &args2);
+    ChessThread_join(t1, NULL);
+    ChessThread_join(t2, NULL);
+    ChessMutex_delete(mutex);
+    ChessThread_delete(t1);
+    ChessThread_delete(t2);
+    return 0;
+}
+
 int main(void){
     //runPerftTests();
     //runSearchTests();
     //runGenTest(POS_4);
-    runAlgebraicNotationTest();
+    //runAlgebraicNotationTest();
+    runThreadTests();
     return 0;
 }

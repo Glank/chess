@@ -1,4 +1,5 @@
-CFLAGS=-Wall -g
+THREAD_LINK_FLAG=-pthread
+CFLAGS=-Wall -g 
 SRC=src
 TEST_SRC=src
 BLD=build
@@ -9,11 +10,15 @@ OBJS+=$(BLD)/strutl.o
 OBJS+=$(BLD)/heuristics.o
 OBJS+=$(BLD)/search.o
 OBJS+=$(BLD)/narrator.o
+OBJS+=$(BLD)/threads.o
 
 all: test
 
 $(BLD):
 	mkdir build
+
+$(BLD)/threads.o: $(BLD) $(SRC)/threads.h $(SRC)/threads.c
+	$(CC) $(CFLAGS) $(THREAD_LINK_FLAG) -c $(SRC)/threads.c -o $(BLD)/threads.o
 
 $(BLD)/narrator.o: $(BLD) $(SRC)/narrator.h $(SRC)/narrator.c $(SRC)/moves.h $(SRC)/board.h
 	$(CC) $(CFLAGS) -c $(SRC)/narrator.c -o $(BLD)/narrator.o
@@ -37,14 +42,14 @@ $(BLD)/board.o: $(BLD) $(SRC)/board.h $(SRC)/board.c $(SRC)/zobrist.h $(SRC)/str
 	$(CC) $(CFLAGS) -c $(SRC)/board.c -o $(BLD)/board.o
 
 test: $(BLD) $(OBJS) $(TEST_SRC)/test.c
-	$(CC) $(CFLAGS) -c $(SRC)/test.c -o $(BLD)/test.o
-	$(CC) $(CFLAGS) $(OBJS) $(BLD)/test.o -o test
+	$(CC) $(CFLAGS) $(THREAD_LINK_FLAG) -c $(SRC)/test.c -o $(BLD)/test.o
+	$(CC) $(CFLAGS) $(THREAD_LINK_FLAG) $(OBJS) $(BLD)/test.o -o test
 	valgrind --leak-check=full ./test
 	rm test
 
 chess: $(BLD) $(OBJS) $(TEST_SRC)/chess.c
-	$(CC) $(CFLAGS) -c $(SRC)/chess.c -o $(BLD)/chess.o
-	$(CC) $(CFLAGS) $(OBJS) $(BLD)/chess.o -o chess
+	$(CC) $(CFLAGS) $(THREAD_LINK_FLAG) -c $(SRC)/chess.c -o $(BLD)/chess.o
+	$(CC) $(CFLAGS) $(THREAD_LINK_FLAG) $(OBJS) $(BLD)/chess.o -o chess
 
 clean:
 	rm -f build/* 
