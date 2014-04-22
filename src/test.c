@@ -222,14 +222,16 @@ struct TestThreadArgs{
     ChessMutex* mutex;
 };
 
-void* testRunFunction(void* args){
+void* testThreadFunction(void* args){
     TestThreadArgs* threadArgs = (TestThreadArgs*)args;
     while(*(threadArgs->count) < 10){
         ChessMutex_lock(threadArgs->mutex);
         int oldCount = *(threadArgs->count);
-        ChessThread_sleep(100);
-        *(threadArgs->count) = oldCount+1;
-        printf("%s: %d\n", threadArgs->name, *(threadArgs->count));
+        if(oldCount<10){
+            ChessThread_sleep(100);
+            *(threadArgs->count) = oldCount+1;
+            printf("%s: %d\n", threadArgs->name, *(threadArgs->count));
+        }
         ChessMutex_unlock(threadArgs->mutex);
     }
     return NULL;
@@ -246,8 +248,8 @@ int runThreadTests(){
     args2.name = "Thread 2";
     args2.mutex = mutex;
     args2.count = &count;
-    ChessThread* t1 = ChessThread_new(&testRunFunction);
-    ChessThread* t2 = ChessThread_new(&testRunFunction);
+    ChessThread* t1 = ChessThread_new(&testThreadFunction);
+    ChessThread* t2 = ChessThread_new(&testThreadFunction);
     ChessThread_start(t1, &args1);
     ChessThread_start(t2, &args2);
     ChessThread_join(t1, NULL);
