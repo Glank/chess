@@ -8,8 +8,10 @@ typedef enum {OPENING, MIDGAME, ENDGAME, PUZZLE} searchType_e;
 
 typedef struct SearchThread SearchThread;
 
-SearchThread* SearchThread_new(ChessBoard* board, searchType_e type);
+SearchThread* SearchThread_new(ChessBoard* board);
 void SearchThread_delete(SearchThread* self);
+void SearchThread_setSearchType(SearchThread* self, searchType_e type);
+searchType_e SearchThread_getSearchType(SearchThread* self);
 void SearchThread_setTimeout(SearchThread* self, long max_milliseconds);
 long SearchThread_getTimeout(SearchThread* self);
 void SearchThread_start(SearchThread* self);

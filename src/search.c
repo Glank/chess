@@ -5,9 +5,35 @@
 #include "search.h"
 #include "heuristics.h"
 
-ChessMoveGenerator* gen;
-ChessBoard* board;
-int maxDepth;
+void* searchMain(void* args);
+
+struct SearchThread{
+    ChessThread* thread;
+    int runFlag; //1 = continue, 0 = stop ASAP
+
+    ChessMoveGenerator* gen;
+    ChessBoard* board;
+    searchType_e searchType;
+
+    move_t bestLine[MAX_LINE_LENGTH];
+    int bestLineLength;
+};
+
+
+SearchThread* SearchThread_new(ChessBoard* board){
+    SearchThread* self = (SearchThread*)malloc(sizeof(SearchThread));
+
+    self->thread = ChessThread_new(&searchMain);
+
+    self->gen = ChessMoveGenerator_new(board);
+    self->board = board;
+    self->searchType = PUZZLE;
+}
+
+void SearchThread_delete(SearchThread* self){
+    ChessMoveGenerator_delete(self->gen);
+}
+
 
 void __init(ChessBoard* b){
     board = b;
@@ -18,8 +44,11 @@ void __close(){
     ChessMoveGenerator_delete(gen);
 }
 
-int alphabeta(ChessHNode* node, int depth, int quiecense, int deepQuiecense,
-    int alpha, int beta, move_t* lineout, int* lineoutLength){
+
+int alphabeta(ChessHNode* node, 
+    int depth, int quiecense, int deepQuiecense,
+    int alpha, int beta, int* runFlag,
+    move_t* lineout, int* lineoutLength){
     if(depth==0){
         int delta = (node->evaluation)-(node->parent->evaluation);
         delta = delta<0?-delta:delta;
