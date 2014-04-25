@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <assert.h>
+#include <signal.h>
 #include "board.h"
 #include "zobrist.h"
 #include "moves.h"
@@ -264,11 +265,25 @@ int runThreadTests(){
     return 0;
 }
 
+volatile sig_atomic_t flag = 0;
+void sigTestFunction(int sig){
+    flag = 1;
+}
+int runSigTest(){
+    signal(SIGINT, sigTestFunction); 
+    while(!flag)
+        ChessThread_sleep(50);
+    printf("Exiting.\n");
+    ChessThread_sleep(5000);
+    return 0;
+}
+
 int main(void){
     //runPerftTests();
-    runSearchTests();
+    //runSearchTests();
     //runGenTest(POS_4);
     //runAlgebraicNotationTest();
     //runThreadTests();
+    runSigTest();
     return 0;
 }

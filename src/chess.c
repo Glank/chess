@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <assert.h>
 #include <string.h>
+#include <signal.h>
 #include "board.h"
 #include "zobrist.h"
 #include "moves.h"
@@ -10,34 +11,25 @@
 #include "search.h"
 #include "narrator.h"
 
+SearchThread* thread;
+void interruptHook(int sig){
+    SearchThread_stop(thread);
+}
+
 int main(int argc, char** argv){
     initZobrist();
     ChessBoard* board = ChessBoard_new(argv[1]);
     initChessHeuristics(board);
+    thread = SearchThread_new(board);
+    SearchThread_setTimeout(thread, 0);
+    SearchThread_setPrintEachNewLine(thread, 1);
 
     ChessBoard_print(board);
+
+    SearchThread_start(thread);
+    SearchThread_join(thread);
     
-    int depth = 4;
-    if(argc>2)
-        depth = strtol(argv[2], NULL, 10);
-
-    move_t line[MAX_LINE_LENGTH];
-    int length;
-    int eval = getBestLine(board, depth, line, &length);
-    printf("%d\t", eval);
-    int i;
-    char moveOut[10];
-    int moveOutSize;
-    for(i = 0; i < length; i++){
-        if(i!=0)
-            printf(" ");
-        toAlgebraicNotation(line[i], board, moveOut, &moveOutSize);
-        printf("%s", moveOut);
-        ChessBoard_makeMove(board, line[i]);
-    }
-    printf("\n");
-
-
+    SearchThread_delete(thread);
     ChessBoard_delete(board);
     closeChessHeuristics();
     closeZobrist();

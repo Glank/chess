@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <limits.h>
 #include "search.h"
+#include "narrator.h"
 #include "heuristics.h"
 #define MAX_DEPTH 8
 
@@ -47,6 +48,7 @@ struct SearchThread{
     move_t bestLine[MAX_LINE_LENGTH];
     int bestLineLength;
     int bestLineValue;
+    int printEachNewLine;
 };
 SearchThread* SearchThread_new(ChessBoard* board){
     SearchThread* self = (SearchThread*)malloc(sizeof(SearchThread));
@@ -60,6 +62,7 @@ SearchThread* SearchThread_new(ChessBoard* board){
 
     self->bestLineLength = 0;
     self->bestLineValue = 0;
+    self->printEachNewLine = 0;
     return self;
 }
 void SearchThread_delete(SearchThread* self){
@@ -106,9 +109,39 @@ void SearchThread_join(SearchThread* self){
 int SearchThread_isRunning(SearchThread* self){
     return ChessThread_getState(self->thread) == RUNNING_THREAD;
 }
+void SearchThread_setPrintEachNewLine(SearchThread* self, int b){
+    ChessMutex_lock(self->bestLineMutex);
+    self->printEachNewLine = b;
+    ChessMutex_unlock(self->bestLineMutex);
+}
+int SearchThread_getPrintEachNewLine(SearchThread* self){
+    int ret;
+    ChessMutex_lock(self->bestLineMutex);
+    ret = self->printEachNewLine;
+    ChessMutex_unlock(self->bestLineMutex);
+    return ret;
+}
+void SearchThread_printBestLine(SearchThread* self){
+    int i;
+    printf("%d\t", self->bestLineValue);
+    char moveOut[10];
+    int moveOutSize;
+    for(i = 0; i < self->bestLineLength; i++){
+        if(i!=0)
+            printf(" ");
+        toAlgebraicNotation(self->bestLine[i], self->board, moveOut, &moveOutSize);
+        printf("%s", moveOut);
+        ChessBoard_makeMove(self->board, self->bestLine[i]);
+    }
+    for(i = 0; i < self->bestLineLength; i++)
+        ChessBoard_unmakeMove(self->board);
+    printf("\n");
+}
 
 int isDying(SearchThread* self){
-    return ((!self->runFlag)||(self->max_seconds < time(NULL)-self->start_time));
+    return ((!self->runFlag)||
+        ((self->max_seconds!=0)&&
+        (self->max_seconds < time(NULL)-self->start_time)));
 }
 
 int alphabeta(
@@ -224,6 +257,8 @@ void* searchMain(void* args){
             self->bestLineValue = eval;
             for(i=0; i<tempLineLength; i++)
                 self->bestLine[i] = tempLine[i];
+            if(self->printEachNewLine)
+                SearchThread_printBestLine(self);
             ChessMutex_unlock(self->bestLineMutex);
         }
     }
