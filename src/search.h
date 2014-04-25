@@ -17,5 +17,8 @@ void SearchThread_setTimeout(SearchThread* self, time_t max_seconds);
 long SearchThread_getTimeout(SearchThread* self);
 int SearchThread_getBestLine(SearchThread* self, move_t* lineOut, int* lineLength);
 void SearchThread_start(SearchThread* self);
+void SearchThread_stop(SearchThread* self);
+void SearchThread_join(SearchThread* self);
+int SearchThread_isRunning(SearchThread* self);
 
 #endif

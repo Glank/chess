@@ -143,11 +143,14 @@ int runSearchTest(char* start, int depth){
     initZobrist();
     ChessBoard* board = ChessBoard_new(start);
     initChessHeuristics(board);
-
+    SearchThread* thread = SearchThread_new(board);
     ChessBoard_print(board);
+
+    SearchThread_start(thread);
+    SearchThread_join(thread);
     move_t line[MAX_LINE_LENGTH];
     int length;
-    int eval = getBestLine(board, depth, line, &length);
+    int eval = SearchThread_getBestLine(thread, line, &length);
     printf("Eval: %d\n", eval);
     printf("Length: %d\n", length);
     int i;
@@ -161,6 +164,7 @@ int runSearchTest(char* start, int depth){
         printf("%x\n", board->hash);
     }
 
+    SearchThread_delete(thread);
     ChessBoard_delete(board);
     closeChessHeuristics();
     closeZobrist();
@@ -262,9 +266,9 @@ int runThreadTests(){
 
 int main(void){
     //runPerftTests();
-    //runSearchTests();
+    runSearchTests();
     //runGenTest(POS_4);
     //runAlgebraicNotationTest();
-    runThreadTests();
+    //runThreadTests();
     return 0;
 }

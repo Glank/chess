@@ -48,6 +48,9 @@ int ChessThread_sleep(long milliseconds){
     ret = usleep(microseconds);
     return ret;
 }
+threadState_e ChessThread_getState(ChessThread* self){
+    return self->state;
+}
 
 struct ChessMutex{
     pthread_mutex_t mutex;

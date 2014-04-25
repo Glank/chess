@@ -6,19 +6,19 @@
 #include "heuristics.h"
 #define MAX_DEPTH 8
 
-const int DEPTH_ORDERS[][] = {
+const int DEPTH_ORDERS[4][9] = {
     {1,2,3,4,5,6,7,8,9}, //opening depths
     {1,2,2,3,3,3,4,4,4}, //midgame depths
     {1,2,2,3,3,4,4,5,5}, //endgame depths
     {1,2,2,3,3,3,4,4,4}  //puzzle  depths
 };
-const int QUIECENSE_ORDERS[][] = {
+const int QUIECENSE_ORDERS[4][9] = {
     {0,0,1,1,2,2,3,3,4}, //opening depths
     {0,0,1,1,2,2,3,3,4}, //midgame depths
     {0,0,1,1,2,2,3,3,4}, //endgame depths
     {0,0,1,1,2,2,3,3,4}  //puzzle  depths
 };
-const int DEEP_QUIECENSE_ORDERS[][] = {
+const int DEEP_QUIECENSE_ORDERS[4][9] = {
     {0,0,1,1,2,2,3,3,4}, //opening depths
     {0,0,1,1,2,2,3,3,4}, //midgame depths
     {0,0,1,1,2,2,3,3,4}, //endgame depths
@@ -29,7 +29,7 @@ void* searchMain(void* args);
 int alphabeta(
     SearchThread* self, ChessHNode* node, 
     int depth, int quiecense, int deepQuiecense,
-    int alpha, int beta, int* runFlag,
+    int alpha, int beta,
     move_t* lineout, int* lineoutLength);
 int isDying(SearchThread* self);
 
@@ -44,7 +44,7 @@ struct SearchThread{
     ChessBoard* board;
     searchType_e searchType;
 
-    move_t* bestLine;
+    move_t bestLine[MAX_LINE_LENGTH];
     int bestLineLength;
     int bestLineValue;
 };
@@ -58,14 +58,15 @@ SearchThread* SearchThread_new(ChessBoard* board){
     self->board = board;
     self->searchType = PUZZLE;
 
-    self->bestLine = (move_t*)malloc(sizeof(move_t)*MAX_LINE_LENGTH);
     self->bestLineLength = 0;
     self->bestLineValue = 0;
+    return self;
 }
 void SearchThread_delete(SearchThread* self){
     ChessMoveGenerator_delete(self->gen);
     ChessThread_delete(self->thread);
     ChessMutex_delete(self->bestLineMutex);
+    free(self);
 }
 void SearchThread_setSearchType(SearchThread* self, searchType_e type){
     self->searchType = type;
@@ -73,32 +74,47 @@ void SearchThread_setSearchType(SearchThread* self, searchType_e type){
 searchType_e SearchThread_getSearchType(SearchThread* self){
     return self->searchType;
 }
-void SearchThread_setTimeout(SearchThread* self, time_t max_milliseconds){
-    self->max_milliseconds = max_milliseconds;
+void SearchThread_setTimeout(SearchThread* self, time_t max_seconds){
+    self->max_seconds = max_seconds;
 }
 long SearchThread_getTimeout(SearchThread* self){
-    return self->max_milliseconds;
+    return self->max_seconds;
 }
 int SearchThread_getBestLine(SearchThread* self, move_t* lineOut, int* lineLength){
     int ret;
     ChessMutex_lock(self->bestLineMutex);
         int i;
-        for(i=0; i<self->bestLineValue; i++)
+        for(i=0; i<self->bestLineLength; i++)
             lineOut[i] = self->bestLine[i];
         (*lineLength) = self->bestLineLength;
         ret = self->bestLineValue;
     ChessMutex_unlock(self->bestLineMutex);
     return ret;
 }
+void SearchThread_start(SearchThread* self){
+    self->runFlag = 1;
+    self->start_time = time(NULL);
+    ChessThread_start(self->thread, self);
+}
+void SearchThread_stop(SearchThread* self){
+    self->runFlag = 0;
+    ChessThread_join(self->thread, NULL);
+}
+void SearchThread_join(SearchThread* self){
+    ChessThread_join(self->thread, NULL);
+}
+int SearchThread_isRunning(SearchThread* self){
+    return ChessThread_getState(self->thread) == RUNNING_THREAD;
+}
 
 int isDying(SearchThread* self){
-    return ((!self->runFlag)||(self->max_time < time(NULL)-self->start_time));
+    return ((!self->runFlag)||(self->max_seconds < time(NULL)-self->start_time));
 }
 
 int alphabeta(
     SearchThread* self, ChessHNode* node, 
     int depth, int quiecense, int deepQuiecense,
-    int alpha, int beta, int* runFlag,
+    int alpha, int beta,
     move_t* lineout, int* lineoutLength){
     if(isDying(self)){
         (*lineoutLength) = 0;
@@ -126,7 +142,7 @@ int alphabeta(
         }
     }
     //expand
-    ChessHNode_expandBranches(node, gen);
+    ChessHNode_expandBranches(node, self->gen);
     //if terminal
     if(node->childrenCount==0){
         ChessHNode_deleteChildren(node);
@@ -141,10 +157,10 @@ int alphabeta(
     if(node->toPlay==WHITE){
         for(i=node->childrenCount-1; i>=0; i--){
             child = node->children[i];
-            ChessBoard_makeMove(board, child->move);
+            ChessBoard_makeMove(self->board, child->move);
             eval = alphabeta(self, child, depth-1, quiecense, deepQuiecense, 
                 alpha, beta, lines[i]+1, lineLengths+i);
-            ChessBoard_unmakeMove(board);
+            ChessBoard_unmakeMove(self->board);
             if(eval>alpha){
                 alpha = eval;
                 best = i;
@@ -163,10 +179,10 @@ int alphabeta(
     else{
         for(i=0; i<node->childrenCount; i++){
             child = node->children[i];
-            ChessBoard_makeMove(board, child->move);
+            ChessBoard_makeMove(self->board, child->move);
             eval = alphabeta(self, child, depth-1, quiecense, deepQuiecense, 
                 alpha, beta, lines[i]+1, lineLengths+i);
-            ChessBoard_unmakeMove(board);
+            ChessBoard_unmakeMove(self->board);
             if(eval<beta){
                 beta = eval;
                 best = i;
@@ -201,7 +217,7 @@ void* searchMain(void* args){
     move_t tempLine[MAX_LINE_LENGTH];
     int tempLineLength, eval, depth, i;
     for(depth = 0; depth<MAX_DEPTH && !isDying(self); depth++){
-        eval = depthSearch(self, start, depth, line, lineLength);
+        eval = depthSearch(self, start, depth, tempLine, &tempLineLength);
         if(!isDying(self)){
             ChessMutex_lock(self->bestLineMutex);
             self->bestLineLength = tempLineLength;
@@ -211,4 +227,6 @@ void* searchMain(void* args){
             ChessMutex_unlock(self->bestLineMutex);
         }
     }
+    ChessHNode_delete(start);
+    return NULL;
 }
