@@ -148,7 +148,8 @@ move_t fromAlgebraicNotation(char* notation, ChessBoard* board){
             break;
         }
     }
-    assert(i<gen->nextCount);
+    if(i<gen->nextCount)
+        return 0;
     ChessMoveGenerator_delete(gen);
     return move;
 }

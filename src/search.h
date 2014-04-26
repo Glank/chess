@@ -23,5 +23,6 @@ void SearchThread_start(SearchThread* self);
 void SearchThread_stop(SearchThread* self);
 void SearchThread_join(SearchThread* self);
 int SearchThread_isRunning(SearchThread* self);
+move_t SearchThread_getBestMove(SearchThread* self);
 
 #endif

@@ -137,6 +137,13 @@ void SearchThread_printBestLine(SearchThread* self){
         ChessBoard_unmakeMove(self->board);
     printf("\n");
 }
+move_t SearchThread_getBestMove(SearchThread* self){
+    move_t ret;
+    ChessMutex_lock(self->bestLineMutex);
+    ret = self->bestLine[0];
+    ChessMutex_unlock(self->bestLineMutex);
+    return ret;
+}
 
 int isDying(SearchThread* self){
     return ((!self->runFlag)||
