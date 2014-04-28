@@ -38,8 +38,10 @@ char* getLine() {
             line = linen + (line - linep);
             linep = linen;
         }
-        if((*line++ = c) == '\n')
+        if((*line++ = c) == '\n'){
+            line--;
             break;
+        }
     }
     *line = '\0';
     return linep;

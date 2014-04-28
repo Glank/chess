@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
+#include <time.h>
 #define PAWN_VALUE      100
 #define KNIGHT_VALUE    300
 #define BISHOP_VALUE    300
@@ -13,6 +14,7 @@
 ChessMoveGenerator* __gen; //a private generator just for evaluations
 
 void initChessHeuristics(ChessBoard* board){
+    srand(time(NULL));
     __gen = ChessMoveGenerator_new(board);
 }
 
@@ -94,6 +96,9 @@ void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
     eval-=board->pieceSets[BLACK]->piecesCounts[BISHOP_INDEX]*BISHOP_VALUE;
     eval-=board->pieceSets[BLACK]->piecesCounts[ROOK_INDEX]*ROOK_VALUE;
     eval-=board->pieceSets[BLACK]->piecesCounts[QUEEN_INDEX]*QUEEN_VALUE;
+
+    //fuzz
+    eval+=(rand()%11)-5;
 
     self->evaluation = eval;
     self->state = PRE_EVAL;

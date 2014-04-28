@@ -48,7 +48,6 @@ void doAIMove(ChessBoard* board, int seconds){
     toAlgebraicNotation(bestMove, board, moveOut, &moveOutLength);
     printf("%s\n", moveOut);
     ChessBoard_makeMove(board, bestMove);
-    ChessBoard_print(board);
     SearchThread_delete(thread);
 }
 
@@ -61,14 +60,13 @@ void doHumanMove(ChessBoard* board){
         move = fromAlgebraicNotation(line, board);
     }
     ChessBoard_makeMove(board, move);
-    ChessBoard_print(board);
 }
 
 void doMove(ChessBoard* board, int human){
     if(human)
         doHumanMove(board);
     else
-        doAIMove(board, 60);
+        doAIMove(board, 10);
 }
 
 int ChessBoard_testForCheckmate(ChessBoard* self){
@@ -113,12 +111,13 @@ int game_main(int argc, char** argv){
     initZobrist();
     ChessBoard* board = ChessBoard_new(FEN_START);
     initChessHeuristics(board);
-    ChessBoard_print(board);
 
     int player = 0;
     while(!gameOver(board)){
+        printf("%x\n", board->hash);
+        ChessBoard_print(board);
         doMove(board, players[player]);
-        player = player?1:0;
+        player = player?0:1;
     }
     
     ChessBoard_delete(board);
