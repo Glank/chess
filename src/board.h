@@ -69,7 +69,7 @@ typedef uint16_t move_t;
 #define BLACK_KING_START 60
 #define BLACK_KING_ROOK_START 63
 //the FEN starting position
-#define FEN_START "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+#define FEN_START "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
 
 struct ChessPiece{
     location_t location;

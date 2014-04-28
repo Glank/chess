@@ -31,6 +31,8 @@ char __getPieceChar(ChessPiece* self){
 }
 ChessPiece* __newPieceFromChar(char c, location_t loc){
     int typeColor = getCharIndex(c, "KkQqRrNnBbPp", 12);
+    if(typeColor==-1)
+        printf("%c\n", c);
     assert(typeColor!=-1);
     pieceType_e type = (pieceType_e)(typeColor&(~1));
     color_e color = (color_e)(typeColor&1);
