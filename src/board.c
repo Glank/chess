@@ -110,6 +110,9 @@ void __uncapturePiece(ChessBoard* board){
 
 ChessBoard* ChessBoard_new(const char* fen){
     ChessBoard* board = (ChessBoard*)malloc(sizeof(ChessBoard));
+    board->moves = (move_t*)malloc(sizeof(move_t)*MAX_MOVES);
+    board->backups = (BoardBackup*)malloc(sizeof(BoardBackup)*MAX_MOVES);
+    board->captured = (ChessPiece**)malloc(sizeof(ChessPiece*)*MAX_CAPTURES);
     board->movesCount = 0;
     board->capturedCount = 0;
     int i;
@@ -204,6 +207,26 @@ void ChessBoard_delete(ChessBoard* self){
     //free everything else
     free(self);
 }
+void ChessBoard_equals(ChessBoard* self, ChessBoard* other){
+    if(self->hash!=other->hash)
+        return 0;
+    if(self->flags!=other->flags)
+        return 0;
+    if(self->movesCount/50 != other->movesCount/50)
+        return 0;
+    int i;
+    for(i=0;i<64;i++){
+        if(self->squares[i]!=other->squares[i]){
+            if(self->squares[i]==NULL || other->squares[i]==NULL)
+                return 0;
+            if(self->squares[i]->type!=other->squares[i]->type)
+                return 0;
+            if(self->squares[i]->color!=other->squares[i]->color)
+                return 0;
+        }
+    }
+    return 1;
+}
 void ChessBoard_makeMove(ChessBoard* self, move_t move){
     //push the move onto the move stack
     BoardBackup* backup = &(self->backups[self->movesCount]);
@@ -211,7 +234,7 @@ void ChessBoard_makeMove(ChessBoard* self, move_t move){
     backup->flags = self->flags;
     backup->fiftyMoveCount = self->fiftyMoveCount;
     self->moves[self->movesCount++] = move;
-    if(self->flags&TO_PLAY_FLAG)
+    if(self->flags&TO_PLAY_FLAG) //black
         self->fiftyMoveCount++;
     __toggleToPlay(self);
     __clearEnPassantFlags(self);

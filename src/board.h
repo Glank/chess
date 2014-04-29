@@ -93,11 +93,11 @@ struct BoardBackup{
 };
 
 struct ChessBoard{
-    move_t moves[MAX_MOVES];
-    BoardBackup backups[MAX_MOVES];
+    move_t* moves;
+    BoardBackup* backups;
     int movesCount;
     int fiftyMoveCount;
-    ChessPiece* captured[MAX_CAPTURES];
+    ChessPiece** captured;
     int capturedCount;
     ChessPiece* squares[64];
     ChessPieceSet* pieceSets[2];
@@ -106,6 +106,8 @@ struct ChessBoard{
 };
 ChessBoard* ChessBoard_new(const char* fen);
 void ChessBoard_delete(ChessBoard* self);
+int ChessBoard_equals(ChessBoard* self, ChessBoard* other);
+ChessBoard* ChessBoard_copy(ChessBoard* self);
 void ChessBoard_makeMove(ChessBoard* self, move_t move);
 move_t ChessBoard_unmakeMove(ChessBoard* self);
 void ChessBoard_print(ChessBoard* self);
