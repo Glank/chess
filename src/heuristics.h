@@ -32,5 +32,4 @@ void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board);
 void ChessHNode_doFullEvaluation(ChessHNode* self, ChessBoard* board);
 void ChessHNode_expandBranches(ChessHNode* self, ChessMoveGenerator* gen);
 void ChessHNode_expandLeaves(ChessHNode* self, ChessMoveGenerator* gen);
-int ChessBoard_isInOptionalDraw(ChessBoard* board);
 #endif

@@ -232,6 +232,24 @@ int ChessBoard_equals(ChessBoard* self, ChessBoard* other){
     }
     return 1;
 }
+
+int ChessBoard_isInOptionalDraw(ChessBoard* board){
+    GameInfo* info = (GameInfo*)board->extra;
+    if(board->fiftyMoveCount>=50)
+        return 1;
+    int i;
+    int count=1;
+    for(i = 0; i < board->fiftyMoveCount; i++){
+        if(info->backups[i].hash==board->hash)
+            count++;
+    }
+    //this is slopy and will have some errors, but it's way quicker than
+    //a perfect check
+    if(count>=3)
+        return 1;
+    return 0;
+}
+
 void ChessBoard_makeMove(ChessBoard* self, move_t move){
     //push the move onto the move stack
     GameInfo* info = (GameInfo*)self->extra;

@@ -22,23 +22,6 @@ void closeChessHeuristics(){
     ChessMoveGenerator_delete(__gen);
 }
 
-int ChessBoard_isInOptionalDraw(ChessBoard* board){
-    GameInfo* info = (GameInfo*)board->extra;
-    if(board->fiftyMoveCount>=50)
-        return 1;
-    int i;
-    int count=1;
-    for(i = 0; i < board->fiftyMoveCount; i++){
-        if(info->backups[i].hash==board->hash)
-            count++;
-    }
-    //this is slopy and will have some errors, but it's way quicker than
-    //a perfect check
-    if(count>=3)
-        return 1;
-    return 0;
-}
-
 ChessHNode* ChessHNode_new(ChessHNode* parent, ChessBoard* board){
     GameInfo* info = (GameInfo*)board->extra;
     ChessHNode* self = (ChessHNode*)malloc(sizeof(ChessHNode));

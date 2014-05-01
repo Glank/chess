@@ -23,5 +23,4 @@ void ChessMoveGenerator_generateMoves(ChessMoveGenerator* self,
     int inCheck, void (*afterGen)(ChessBoard*));
 void ChessMoveGenerator_copyMoves(ChessMoveGenerator* self,
     move_t** to, int* toCount);
-int ChessBoard_testForCheck(ChessBoard* board);
 #endif
