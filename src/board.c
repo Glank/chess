@@ -73,7 +73,8 @@ void ChessPieceSet_delete(ChessPieceSet* self){
 void __addPiece(ChessBoard* board, ChessPiece* piece){
     assert(piece!=NULL);
     assert(board!=NULL);
-    ChessPieceSet* set = board->pieceSets[(int)(piece->color)];
+    GameInfo* info = (GameInfo*)board->extra;
+    ChessPieceSet* set = info->pieceSets[(int)(piece->color)];
     assert(set!=NULL);
     int type = TYPE_TO_INT(piece->type);
     int* count = &(set->piecesCounts[type]);
@@ -84,7 +85,8 @@ void __addPiece(ChessBoard* board, ChessPiece* piece){
     board->hash^=hash;
 }
 void __removePiece(ChessBoard* board, ChessPiece* piece){
-    ChessPieceSet* set = board->pieceSets[(int)(piece->color)];
+    GameInfo* info = (GameInfo*)board->extra;
+    ChessPieceSet* set = info->pieceSets[(int)(piece->color)];
     int type = TYPE_TO_INT(piece->type);
     int* count = &(set->piecesCounts[type]);
     int i;
@@ -99,27 +101,28 @@ void __removePiece(ChessBoard* board, ChessPiece* piece){
 }
 void __capturePiece(ChessBoard* board, ChessPiece* piece){
     __removePiece(board, piece);
-    assert(board->capturedCount<MAX_CAPTURES);
-    board->captured[(board->capturedCount)++] = piece;
+    GameInfo* info = (GameInfo*)board->extra;
+    assert(info->capturedCount<MAX_CAPTURES);
+    info->captured[(info->capturedCount)++] = piece;
 }
 void __uncapturePiece(ChessBoard* board){
-    assert(board->capturedCount>0);
-    ChessPiece* piece = board->captured[--(board->capturedCount)];
+    GameInfo* info = (GameInfo*)board->extra;
+    assert(info->capturedCount>0);
+    ChessPiece* piece = info->captured[--(info->capturedCount)];
     __addPiece(board, piece);
 }
 
 ChessBoard* ChessBoard_new(const char* fen){
     ChessBoard* board = (ChessBoard*)malloc(sizeof(ChessBoard));
-    board->moves = (move_t*)malloc(sizeof(move_t)*MAX_MOVES);
-    board->backups = (BoardBackup*)malloc(sizeof(BoardBackup)*MAX_MOVES);
-    board->captured = (ChessPiece**)malloc(sizeof(ChessPiece*)*MAX_CAPTURES);
-    board->movesCount = 0;
-    board->capturedCount = 0;
+    board->extra = malloc(sizeof(GameInfo));
+    GameInfo* info = (GameInfo*)board->extra;
+    info->capturedCount = 0;
+    info->movesCount = 0;
     int i;
     for(i=0; i<64; i++)
         board->squares[i]=NULL;
-    board->pieceSets[(int)WHITE] = ChessPieceSet_new();
-    board->pieceSets[(int)BLACK] = ChessPieceSet_new();
+    info->pieceSets[(int)WHITE] = ChessPieceSet_new();
+    info->pieceSets[(int)BLACK] = ChessPieceSet_new();
     board->hash = 0;
     board->flags = 0;
     board->fiftyMoveCount = 0;
@@ -192,27 +195,29 @@ ChessBoard* ChessBoard_new(const char* fen){
     return board;
 }
 void ChessBoard_delete(ChessBoard* self){
+    GameInfo* info = (GameInfo*)self->extra;
     int i;
     //delete all captured pieces
-    for(i=0; i<self->capturedCount; i++)
-        ChessPiece_delete(self->captured[i]);
+    for(i=0; i<info->capturedCount; i++)
+        ChessPiece_delete(info->captured[i]);
     //delete all pieces left on the squares
     for(i=0; i<64; i++){
         if(self->squares[i]!=NULL)
             ChessPiece_delete(self->squares[i]);
     }
     //free the piece sets
-    ChessPieceSet_delete(self->pieceSets[0]);
-    ChessPieceSet_delete(self->pieceSets[1]);
+    ChessPieceSet_delete(info->pieceSets[0]);
+    ChessPieceSet_delete(info->pieceSets[1]);
     //free everything else
+    free(info);
     free(self);
 }
-void ChessBoard_equals(ChessBoard* self, ChessBoard* other){
+int ChessBoard_equals(ChessBoard* self, ChessBoard* other){
     if(self->hash!=other->hash)
         return 0;
     if(self->flags!=other->flags)
         return 0;
-    if(self->movesCount/50 != other->movesCount/50)
+    if(self->fiftyMoveCount/50 != other->fiftyMoveCount/50)
         return 0;
     int i;
     for(i=0;i<64;i++){
@@ -229,11 +234,12 @@ void ChessBoard_equals(ChessBoard* self, ChessBoard* other){
 }
 void ChessBoard_makeMove(ChessBoard* self, move_t move){
     //push the move onto the move stack
-    BoardBackup* backup = &(self->backups[self->movesCount]);
+    GameInfo* info = (GameInfo*)self->extra;
+    BoardBackup* backup = &(info->backups[info->movesCount]);
     backup->hash = self->hash;
     backup->flags = self->flags;
     backup->fiftyMoveCount = self->fiftyMoveCount;
-    self->moves[self->movesCount++] = move;
+    info->moves[info->movesCount++] = move;
     if(self->flags&TO_PLAY_FLAG) //black
         self->fiftyMoveCount++;
     __toggleToPlay(self);
@@ -343,9 +349,10 @@ void ChessBoard_makeMove(ChessBoard* self, move_t move){
     __movePieceByLoc(self, from, to);
 }
 move_t ChessBoard_unmakeMove(ChessBoard* self){
-    assert(self->movesCount!=0);
-    move_t move = self->moves[self->movesCount-1];
-    BoardBackup* backup = &(self->backups[--(self->movesCount)]);
+    GameInfo* info = (GameInfo*)self->extra;
+    assert(info->movesCount!=0);
+    move_t move = info->moves[info->movesCount-1];
+    BoardBackup* backup = &(info->backups[--(info->movesCount)]);
     int meta = GET_META(move);
     location_t from = GET_FROM(move);
     location_t to = GET_TO(move);
@@ -465,6 +472,7 @@ void ChessBoard_print(ChessBoard* self){
     }
 }
 void ChessBoard_longPrint(ChessBoard* self){
+    GameInfo* info = (GameInfo*)self->extra;
     ChessBoard_print(self);
     printf("Castle Flags: ");
     if(self->flags&WHITE_KING_CASTLE_FLAG)
@@ -490,33 +498,33 @@ void ChessBoard_longPrint(ChessBoard* self){
     printf("Hash: %x\n", self->hash);
     printf("Moves:\n");
     int i;
-    for(i = 0; i < self->movesCount; i++){
+    for(i = 0; i < info->movesCount; i++){
         printf("%c%d, %c%d\n", 
-            'a'+GET_FILE(GET_FROM(self->moves[i])),
-            1+GET_RANK(GET_FROM(self->moves[i])),
-            'a'+GET_FILE(GET_TO(self->moves[i])),
-            1+GET_RANK(GET_TO(self->moves[i])));
+            'a'+GET_FILE(GET_FROM(info->moves[i])),
+            1+GET_RANK(GET_FROM(info->moves[i])),
+            'a'+GET_FILE(GET_TO(info->moves[i])),
+            1+GET_RANK(GET_TO(info->moves[i])));
     }
     printf("Captured Stack:\n");
-    for(i = 0; i < self->capturedCount; i++){
+    for(i = 0; i < info->capturedCount; i++){
         printf("%d)\t%c\n",i,
-            __getPieceChar(self->captured[i])); 
+            __getPieceChar(info->captured[i])); 
     }
     printf("White Set:\n");
     int j;
     for(i = 0; i < 6; i++){
-        printf("%d)\t%d\t", i, self->pieceSets[0]->piecesCounts[i]);
-        for(j = 0; j < self->pieceSets[0]->piecesCounts[i]; j++){
-            printf("%d ", self->pieceSets[0]->
+        printf("%d)\t%d\t", i, info->pieceSets[0]->piecesCounts[i]);
+        for(j = 0; j < info->pieceSets[0]->piecesCounts[i]; j++){
+            printf("%d ", info->pieceSets[0]->
                 piecesByType[i][j]->location);
         }
         printf("\n");
     }
     printf("Black Set:\n");
     for(i = 0; i < 6; i++){
-        printf("%d)\t%d\t", i, self->pieceSets[1]->piecesCounts[i]);
-        for(j = 0; j < self->pieceSets[1]->piecesCounts[i]; j++){
-            printf("%d ", self->pieceSets[1]
+        printf("%d)\t%d\t", i, info->pieceSets[1]->piecesCounts[i]);
+        for(j = 0; j < info->pieceSets[1]->piecesCounts[i]; j++){
+            printf("%d ", info->pieceSets[1]
                 ->piecesByType[i][j]->location);
         }
         printf("\n");

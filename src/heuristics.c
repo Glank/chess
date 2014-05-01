@@ -23,12 +23,13 @@ void closeChessHeuristics(){
 }
 
 int ChessBoard_isInOptionalDraw(ChessBoard* board){
+    GameInfo* info = (GameInfo*)board->extra;
     if(board->fiftyMoveCount>=50)
         return 1;
     int i;
     int count=1;
     for(i = 0; i < board->fiftyMoveCount; i++){
-        if(board->backups[i].hash==board->hash)
+        if(info->backups[i].hash==board->hash)
             count++;
     }
     //this is slopy and will have some errors, but it's way quicker than
@@ -39,19 +40,19 @@ int ChessBoard_isInOptionalDraw(ChessBoard* board){
 }
 
 ChessHNode* ChessHNode_new(ChessHNode* parent, ChessBoard* board){
-    ChessHNode* self = (ChessHNode*)malloc(
-        sizeof(ChessHNode));
+    GameInfo* info = (GameInfo*)board->extra;
+    ChessHNode* self = (ChessHNode*)malloc(sizeof(ChessHNode));
     self->parent = parent;
     self->children = NULL;
     self->childrenCount = -1;
     if(parent!=NULL)
-        self->move = board->moves[board->movesCount-1];
+        self->move = info->moves[info->movesCount-1];
     else
         self->move = 0;
     self->toPlay = board->flags&TO_PLAY_FLAG?BLACK:WHITE;
     self->inCheck = ChessBoard_testForCheck(board);
     self->hash = board->hash;
-    self->halfMoveNumber = board->movesCount;
+    self->halfMoveNumber = info->movesCount;
     if(parent!=NULL)
         self->depth = parent->depth+1;
     else
@@ -85,17 +86,19 @@ void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
     }
     int eval = 0;
     //just add and subtract the values of each piece
-    eval+=board->pieceSets[WHITE]->piecesCounts[PAWN_INDEX]*PAWN_VALUE;
-    eval+=board->pieceSets[WHITE]->piecesCounts[KNIGHT_INDEX]*KNIGHT_VALUE;
-    eval+=board->pieceSets[WHITE]->piecesCounts[BISHOP_INDEX]*BISHOP_VALUE;
-    eval+=board->pieceSets[WHITE]->piecesCounts[ROOK_INDEX]*ROOK_VALUE;
-    eval+=board->pieceSets[WHITE]->piecesCounts[QUEEN_INDEX]*QUEEN_VALUE;
+    GameInfo* info = (GameInfo*)board->extra;
 
-    eval-=board->pieceSets[BLACK]->piecesCounts[PAWN_INDEX]*PAWN_VALUE;
-    eval-=board->pieceSets[BLACK]->piecesCounts[KNIGHT_INDEX]*KNIGHT_VALUE;
-    eval-=board->pieceSets[BLACK]->piecesCounts[BISHOP_INDEX]*BISHOP_VALUE;
-    eval-=board->pieceSets[BLACK]->piecesCounts[ROOK_INDEX]*ROOK_VALUE;
-    eval-=board->pieceSets[BLACK]->piecesCounts[QUEEN_INDEX]*QUEEN_VALUE;
+    eval+=info->pieceSets[WHITE]->piecesCounts[PAWN_INDEX]*PAWN_VALUE;
+    eval+=info->pieceSets[WHITE]->piecesCounts[KNIGHT_INDEX]*KNIGHT_VALUE;
+    eval+=info->pieceSets[WHITE]->piecesCounts[BISHOP_INDEX]*BISHOP_VALUE;
+    eval+=info->pieceSets[WHITE]->piecesCounts[ROOK_INDEX]*ROOK_VALUE;
+    eval+=info->pieceSets[WHITE]->piecesCounts[QUEEN_INDEX]*QUEEN_VALUE;
+
+    eval-=info->pieceSets[BLACK]->piecesCounts[PAWN_INDEX]*PAWN_VALUE;
+    eval-=info->pieceSets[BLACK]->piecesCounts[KNIGHT_INDEX]*KNIGHT_VALUE;
+    eval-=info->pieceSets[BLACK]->piecesCounts[BISHOP_INDEX]*BISHOP_VALUE;
+    eval-=info->pieceSets[BLACK]->piecesCounts[ROOK_INDEX]*ROOK_VALUE;
+    eval-=info->pieceSets[BLACK]->piecesCounts[QUEEN_INDEX]*QUEEN_VALUE;
 
     //fuzz
     eval+=(rand()%11)-5;

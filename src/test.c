@@ -146,6 +146,7 @@ int runSearchTest(char* start, int depth){
     initChessHeuristics(board);
     SearchThread* thread = SearchThread_new(board);
     ChessBoard_print(board);
+    SearchThread_setTimeout(thread, 5);
 
     SearchThread_start(thread);
     SearchThread_join(thread);
@@ -280,10 +281,10 @@ int runSigTest(){
 
 int main(void){
     //runPerftTests();
-    //runSearchTests();
+    runSearchTests();
     //runGenTest(POS_4);
     //runAlgebraicNotationTest();
     //runThreadTests();
-    runSigTest();
+    //runSigTest();
     return 0;
 }

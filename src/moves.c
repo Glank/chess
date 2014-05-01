@@ -72,14 +72,16 @@ void __initIterValues(ChessMoveGenerator* self, int inCheck,
     self->nextCount = 0;
     flag_t flags = self->board->flags;
     self->toPlay = flags&TO_PLAY_FLAG?BLACK:WHITE;
-    self->curSet = self->board->pieceSets[(int)(self->toPlay)];
+    GameInfo* info = (GameInfo*)self->board->extra;
+    self->curSet = info->pieceSets[(int)(self->toPlay)];
     assert(self->curSet!=NULL);
     self->inCheck = inCheck; 
 }
 
 int __testForCheck(ChessBoard* board, color_e color){
-    ChessPieceSet* pieces = board->pieceSets[color];
-    ChessPieceSet* opPieces = board->pieceSets[OTHER_COLOR(color)];
+    GameInfo* info = (GameInfo*)board->extra;
+    ChessPieceSet* pieces = info->pieceSets[color];
+    ChessPieceSet* opPieces = info->pieceSets[OTHER_COLOR(color)];
     ChessPiece* king = pieces->piecesByType[TYPE_TO_INT(KING)][0];
     int kingRank, kingFile;
     kingRank = GET_RANK(king->location);

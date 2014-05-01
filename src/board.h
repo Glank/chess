@@ -7,6 +7,7 @@ typedef struct ChessPiece ChessPiece;
 typedef struct ChessPieceSet ChessPieceSet;
 typedef struct ChessBoard ChessBoard;
 typedef struct BoardBackup BoardBackup;
+typedef struct GameInfo GameInfo;
 typedef uint8_t location_t;
 #define UNKNOWN_LOCATION 255
 #define RANK_FILE(r,f) (((r)<<3)|(f))
@@ -92,15 +93,19 @@ struct BoardBackup{
     int fiftyMoveCount;
 };
 
-struct ChessBoard{
-    move_t* moves;
-    BoardBackup* backups;
-    int movesCount;
-    int fiftyMoveCount;
-    ChessPiece** captured;
-    int capturedCount;
-    ChessPiece* squares[64];
+struct GameInfo{
+    move_t moves[MAX_MOVES];
+    BoardBackup backups[MAX_MOVES];
+    ChessPiece* captured[MAX_CAPTURES];
     ChessPieceSet* pieceSets[2];
+    int movesCount;
+    int capturedCount;
+};
+
+struct ChessBoard{
+    void* extra;
+    int fiftyMoveCount;
+    ChessPiece* squares[64];
     flag_t flags;
     zob_hash_t hash;
 };
