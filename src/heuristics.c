@@ -10,6 +10,8 @@
 #define ROOK_VALUE      500
 #define QUEEN_VALUE     1000
 #define MOBILITY_VALUE  10
+#define PAWN_PUSH_END_GAME 4
+#define PAWN_CONNECTION_VALUE 2
 
 ChessMoveGenerator* __gen; //a private generator just for evaluations
 
@@ -70,18 +72,112 @@ void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
     int eval = 0;
     //just add and subtract the values of each piece
     GameInfo* info = (GameInfo*)board->extra;
+    
+    int white_pieces_value = 0;
+    white_pieces_value+=info->pieceSets[WHITE]->piecesCounts[PAWN_INDEX]*PAWN_VALUE;
+    white_pieces_value+=info->pieceSets[WHITE]->piecesCounts[KNIGHT_INDEX]*KNIGHT_VALUE;
+    white_pieces_value+=info->pieceSets[WHITE]->piecesCounts[BISHOP_INDEX]*BISHOP_VALUE;
+    white_pieces_value+=info->pieceSets[WHITE]->piecesCounts[ROOK_INDEX]*ROOK_VALUE;
+    white_pieces_value+=info->pieceSets[WHITE]->piecesCounts[QUEEN_INDEX]*QUEEN_VALUE;
 
-    eval+=info->pieceSets[WHITE]->piecesCounts[PAWN_INDEX]*PAWN_VALUE;
-    eval+=info->pieceSets[WHITE]->piecesCounts[KNIGHT_INDEX]*KNIGHT_VALUE;
-    eval+=info->pieceSets[WHITE]->piecesCounts[BISHOP_INDEX]*BISHOP_VALUE;
-    eval+=info->pieceSets[WHITE]->piecesCounts[ROOK_INDEX]*ROOK_VALUE;
-    eval+=info->pieceSets[WHITE]->piecesCounts[QUEEN_INDEX]*QUEEN_VALUE;
+    int black_pieces_value = 0;
+    black_pieces_value+=info->pieceSets[BLACK]->piecesCounts[PAWN_INDEX]*PAWN_VALUE;
+    black_pieces_value+=info->pieceSets[BLACK]->piecesCounts[KNIGHT_INDEX]*KNIGHT_VALUE;
+    black_pieces_value+=info->pieceSets[BLACK]->piecesCounts[BISHOP_INDEX]*BISHOP_VALUE;
+    black_pieces_value+=info->pieceSets[BLACK]->piecesCounts[ROOK_INDEX]*ROOK_VALUE;
+    black_pieces_value+=info->pieceSets[BLACK]->piecesCounts[QUEEN_INDEX]*QUEEN_VALUE;
+    
+    eval+=white_pieces_value;
+    eval-=black_pieces_value;
 
-    eval-=info->pieceSets[BLACK]->piecesCounts[PAWN_INDEX]*PAWN_VALUE;
-    eval-=info->pieceSets[BLACK]->piecesCounts[KNIGHT_INDEX]*KNIGHT_VALUE;
-    eval-=info->pieceSets[BLACK]->piecesCounts[BISHOP_INDEX]*BISHOP_VALUE;
-    eval-=info->pieceSets[BLACK]->piecesCounts[ROOK_INDEX]*ROOK_VALUE;
-    eval-=info->pieceSets[BLACK]->piecesCounts[QUEEN_INDEX]*QUEEN_VALUE;
+    //pushing and connecting pawns is important, especially in the end game
+    int i;
+    ChessPiece* pawn, * connection;
+    int size, push, rank, file;
+    //white pawns
+    size = info->pieceSets[WHITE]->piecesCounts[PAWN_INDEX];
+    for(i=0; i < size; i++){
+        pawn = info->pieceSets[WHITE]->piecesByType[PAWN_INDEX][i];
+        rank = GET_RANK(pawn->location);
+        if(self->halfMoveNumber>50){ //if end game
+            push = rank-2;
+            eval+= push*push*PAWN_PUSH_END_GAME; //push
+        }
+        else{
+            file = GET_FILE(pawn->location);
+            if(rank<6){ //connections
+                if(file>0){
+                    connection = board->squares[RANK_FILE(rank+1,file-1)];
+                    if(connection!=NULL && connection->type==PAWN && connection->color==WHITE)
+                        eval+=PAWN_CONNECTION_VALUE;
+                }
+                if(file<7){
+                    connection = board->squares[RANK_FILE(rank+1,file+1)];
+                    if(connection!=NULL && connection->type==PAWN && connection->color==WHITE)
+                        eval+=PAWN_CONNECTION_VALUE;
+                }
+            }
+        }
+    }
+    //black pawns
+    size = info->pieceSets[BLACK]->piecesCounts[PAWN_INDEX];
+    for(i=0; i < size; i++){
+        pawn = info->pieceSets[BLACK]->piecesByType[PAWN_INDEX][i];
+        rank = GET_RANK(pawn->location);
+        if(self->halfMoveNumber>50){ //if end game
+            push = 6-rank;
+            eval-= push*push*PAWN_PUSH_END_GAME; //push
+        }
+        else{
+            file = GET_FILE(pawn->location);
+            if(rank>1){ //connections
+                if(file>0){
+                    connection = board->squares[RANK_FILE(rank-1,file-1)];
+                    if(connection!=NULL && connection->type==PAWN && connection->color==BLACK)
+                        eval-=PAWN_CONNECTION_VALUE;
+                }
+                if(file<7){
+                    connection = board->squares[RANK_FILE(rank-1,file+1)];
+                    if(connection!=NULL && connection->type==PAWN && connection->color==BLACK)
+                        eval-=PAWN_CONNECTION_VALUE;
+                }
+            }
+        }
+    }
+
+    //mop up heuristic
+    ChessPiece* king, * op_king;
+    //cmd = op kings center manhatan distance
+    //md = manhatin distance between the two kings
+    int add_mopup=0, favor, cmd, md, rank_delta, file_delta;
+    //if white is winning a king-rook v king type situation
+    if(black_pieces_value<ROOK_VALUE && white_pieces_value>=ROOK_VALUE){
+        king = info->pieceSets[WHITE]->piecesByType[KING_INDEX][0];
+        op_king = info->pieceSets[BLACK]->piecesByType[KING_INDEX][0];
+        add_mopup=1;
+        favor=1;
+    }//if black is winning...
+    else if(white_pieces_value<ROOK_VALUE && black_pieces_value>=ROOK_VALUE){
+        king = info->pieceSets[WHITE]->piecesByType[KING_INDEX][0];
+        op_king = info->pieceSets[BLACK]->piecesByType[KING_INDEX][0];
+        add_mopup=1;
+        favor=-1;
+    }
+    if(add_mopup){
+        rank = GET_RANK(op_king->location);
+        file = GET_FILE(op_king->location);
+        rank_delta = rank*2-7;
+        rank_delta = rank_delta<0?-rank_delta:rank_delta; // abs(rank_delta)
+        file_delta = file*2-7;
+        file_delta = file_delta<0?-file_delta:file_delta; // abs(file_delta)
+        cmd = rank_delta+file_delta;
+        rank_delta = rank-GET_RANK(king->location);
+        rank_delta = rank_delta<0?-rank_delta:rank_delta; // abs(rank_delta)
+        file_delta = file-GET_FILE(king->location);
+        file_delta = file_delta<0?-file_delta:file_delta; // abs(file_delta)
+        md = rank_delta+file_delta;
+        eval+=favor*((2*cmd-md)*8-self->halfMoveNumber);
+    }
 
     //fuzz
     eval+=(rand()%11)-5;
@@ -97,9 +193,9 @@ void __judgeTeminal(ChessHNode* self){
     self->type = ABSOLUTE;
     if(self->inCheck){
         if(self->toPlay==WHITE)
-            self->evaluation = INT_MIN;
+            self->evaluation = INT_MIN+self->halfMoveNumber;
         else
-            self->evaluation = INT_MAX;
+            self->evaluation = INT_MAX-self->halfMoveNumber;
     }
     else
         self->evaluation = 0;

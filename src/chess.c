@@ -18,6 +18,7 @@ void interruptHook(int sig){
 }
 
 int puzzle_main(int argc, char** argv){
+    printf("Press Ctl-C to exit.\n");
     initZobrist();
     ChessBoard* board = ChessBoard_new(argv[1]);
     initChessHeuristics(board);
@@ -109,7 +110,11 @@ int game_main(int argc, char** argv){
         assert(strcmp(argv[2], "c")==0);
     }
     initZobrist();
-    ChessBoard* board = ChessBoard_new(FEN_START);
+    ChessBoard* board;
+    if(argc>3)
+        board = ChessBoard_new(argv[3]);
+    else
+        board = ChessBoard_new(FEN_START);
     initChessHeuristics(board);
 
     int player = 0;
@@ -119,6 +124,8 @@ int game_main(int argc, char** argv){
         doMove(board, players[player]);
         player = player?0:1;
     }
+    printf("%x\n", board->hash);
+    ChessBoard_print(board);
     
     ChessBoard_delete(board);
     closeChessHeuristics();
@@ -126,12 +133,25 @@ int game_main(int argc, char** argv){
     return 0;
 }
 
-int main(int argc, char** argv){
-    if(strcmp(argv[1], "-p")==0)
-        return puzzle_main(argc-1, argv+1);
-    else if(strcmp(argv[1], "-g")==0)
-        return game_main(argc-1, argv+1);
+void printUsage(){
+    printf("\nUsage:\n\n");
+    printf("  Puzzle may be input in FEN notation:\n");
+    printf("    ./chess -p \"8/8/8/8/8/6K1/5R2/7k w - - 0 0\"\n\n");
+    printf("  You may play against the computer:\n");
+    printf("    ./chess -g h c\n");
+    printf("  The 'h' and 'c' mean human player and computer player for the first\n  and second players respectively.\n");
+    printf("  You must input moves in PNG algebraic notation - capitolization counts.\n\n");
+    printf("  You can also play a game from any FEN starting possition:\n");
+    printf("    ./chess -g c h \"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2\"\n\n");
+}
 
-    printf("Invalid\n");
-    return 1;
+int main(int argc, char** argv){
+    if(argc==3 && strcmp(argv[1], "-p")==0)
+        return puzzle_main(argc-1, argv+1);
+    else if((argc==4||argc==5) && strcmp(argv[1], "-g")==0)
+        return game_main(argc-1, argv+1);
+    else
+        printUsage();
+
+    return 0;
 }

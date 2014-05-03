@@ -280,8 +280,8 @@ int runSigTest(){
 }
 
 int main(void){
-    //runPerftTests();
-    runSearchTests();
+    runPerftTests();
+    //runSearchTests();
     //runGenTest(POS_4);
     //runAlgebraicNotationTest();
     //runThreadTests();
