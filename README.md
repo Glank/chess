@@ -2,8 +2,8 @@ chess
 =====
 
 A tiny chess AI
-Version 0.0
-(still in alpha, don't expect perfection)
+
+Version 0.0.0 (still in alpha, don't expect perfection)
 
 Build
 -----
@@ -17,7 +17,7 @@ Build
 Usage
 -----
 
-  Puzzle may be input in FEN notation:
+  Puzzles may be input in FEN notation:
 
     ./chess -p "8/8/8/8/8/6K1/5R2/7k w - - 0 0"
 

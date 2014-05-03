@@ -135,7 +135,7 @@ int game_main(int argc, char** argv){
 
 void printUsage(){
     printf("\nUsage:\n\n");
-    printf("  Puzzle may be input in FEN notation:\n");
+    printf("  Puzzles may be input in FEN notation:\n");
     printf("    ./chess -p \"8/8/8/8/8/6K1/5R2/7k w - - 0 0\"\n\n");
     printf("  You may play against the computer:\n");
     printf("    ./chess -g h c\n");
