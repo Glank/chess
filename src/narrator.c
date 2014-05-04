@@ -67,7 +67,7 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
             move_t otherMove;
             for(j = 0; j < gen->nextCount; j++){
                 otherMove = gen->next[j];
-                if((GET_TO(otherMove)==to) &&
+                if((GET_TO(otherMove)==to) && (GET_FROM(otherMove)!=from) &&
                     (board->squares[GET_FROM(otherMove)]->type==piece->type)){
                     if(piece->type==PAWN && (move&CAPTURE_MOVE_FLAG)!=(otherMove&CAPTURE_MOVE_FLAG))
                         continue;
