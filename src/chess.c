@@ -63,11 +63,11 @@ void doHumanMove(ChessBoard* board){
     ChessBoard_makeMove(board, move);
 }
 
-void doMove(ChessBoard* board, int human){
+void doMove(ChessBoard* board, int human, int seconds){
     if(human)
         doHumanMove(board);
     else
-        doAIMove(board, 10);
+        doAIMove(board, seconds);
 }
 
 int ChessBoard_testForCheckmate(ChessBoard* self){
@@ -109,10 +109,18 @@ int game_main(int argc, char** argv){
         players[1] = 0;
         assert(strcmp(argv[2], "c")==0);
     }
+    int sec_specified = 0;
+    int seconds = 10;
+    if(argc>3 && strcmp(argv[3], "-s")==0){
+        sec_specified = 1;
+        sscanf(argv[4], "%d", &seconds);
+    }
     initZobrist();
     ChessBoard* board;
-    if(argc>3)
+    if(!sec_specified && argc>3)
         board = ChessBoard_new(argv[3]);
+    else if(sec_specified && argc>5)
+        board = ChessBoard_new(argv[5]);
     else
         board = ChessBoard_new(FEN_START);
     initChessHeuristics(board);
@@ -121,7 +129,7 @@ int game_main(int argc, char** argv){
     while(!gameOver(board)){
         printf("%x\n", board->hash);
         ChessBoard_print(board);
-        doMove(board, players[player]);
+        doMove(board, players[player], seconds);
         player = player?0:1;
     }
     printf("%x\n", board->hash);
@@ -141,6 +149,8 @@ void printUsage(){
     printf("    ./chess -g h c\n");
     printf("  The 'h' and 'c' mean human player and computer player for the first\n  and second players respectively.\n");
     printf("  You must input moves in PNG algebraic notation - capitolization counts.\n\n");
+    printf("  The -s parameter may be included if you want to specify the number of seconds the AI will think (by default 10)\n");
+    printf("    ./chess -g h c -s 60\n");
     printf("  You can also play a game from any FEN starting possition:\n");
     printf("    ./chess -g c h \"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2\"\n\n");
 }
@@ -148,7 +158,7 @@ void printUsage(){
 int main(int argc, char** argv){
     if(argc==3 && strcmp(argv[1], "-p")==0)
         return puzzle_main(argc-1, argv+1);
-    else if((argc==4||argc==5) && strcmp(argv[1], "-g")==0)
+    else if(argc>3 && strcmp(argv[1], "-g")==0)
         return game_main(argc-1, argv+1);
     else
         printUsage();
