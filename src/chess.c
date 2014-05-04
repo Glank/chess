@@ -127,12 +127,12 @@ int game_main(int argc, char** argv){
 
     int player = 0;
     while(!gameOver(board)){
-        printf("%x\n", board->hash);
+        printf("%016llX\n", (long long unsigned int)board->hash);
         ChessBoard_print(board);
         doMove(board, players[player], seconds);
         player = player?0:1;
     }
-    printf("%x\n", board->hash);
+    printf("%016llX\n", (long long unsigned int)board->hash);
     ChessBoard_print(board);
     
     ChessBoard_delete(board);

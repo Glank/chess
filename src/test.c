@@ -163,7 +163,7 @@ int runSearchTest(char* start, int depth){
         printf("%s\n", moveOut);
         ChessBoard_makeMove(board, line[i]);
         ChessBoard_print(board);
-        printf("%x\n", board->hash);
+        printf("%016llX\n", (long long unsigned int)board->hash);
     }
 
     SearchThread_delete(thread);
@@ -192,7 +192,7 @@ int runGenTest(char* start){
     for(i = 0; i < gen->nextCount; i++){
         toAlgebraicNotation(gen->next[i], board, moveOut, &moveOutSize);
         printf("%s\n", moveOut);
-        printf("%x\n", board->hash);
+        printf("%016llX\n", (long long unsigned int)board->hash);
         ChessBoard_makeMove(board, gen->next[i]);
         ChessBoard_print(board);
         printf("\n");

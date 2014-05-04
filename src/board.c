@@ -513,7 +513,7 @@ void ChessBoard_longPrint(ChessBoard* self){
             (char)('a'+file));
     }
     printf("Flags: %x\n", self->flags);
-    printf("Hash: %x\n", self->hash);
+    printf("Hash: %016llX\n", (long long unsigned int)self->hash);
     printf("Moves:\n");
     int i;
     for(i = 0; i < info->movesCount; i++){
