@@ -104,25 +104,24 @@ int runPerftTests(){
 int runHeuristicsTests(){
     initZobrist();
     ChessBoard* board = ChessBoard_new(POS_2);
-    initChessHeuristics(board);
-    ChessMoveGenerator* gen = ChessMoveGenerator_new(board);
+    ChessHEngine* engine = ChessHEngine_new(board);
 
     ChessBoard_print(board);
-    ChessHNode* root = ChessHNode_new(NULL, board);
+    ChessHNode* root = ChessHNode_new(NULL, engine);
 
-    ChessHNode_expandBranches(root, gen);
+    ChessHNode_expand(root, engine);
     ChessBoard_makeMove(board, root->children[47]->move);
     printf("\n");
     ChessBoard_print(board);
 
-    ChessHNode_expandLeaves(root->children[47], gen);
+    ChessHNode_expand(root->children[47], engine);
     int i;
     int minEval = 10000, minI;
     ChessHNode* child;
     for(i = 0; i < root->children[47]->childrenCount; i++){
         child = root->children[47]->children[i];
-        if(child->evaluation < minEval){
-            minEval = child->evaluation;
+        if(child->info.evaluation < minEval){
+            minEval = child->info.evaluation;
             minI = i;
         }
     }
@@ -131,10 +130,9 @@ int runHeuristicsTests(){
     ChessBoard_print(board);
 
     ChessHNode_delete(root);
-    ChessMoveGenerator_delete(gen);
+    ChessHEngine_delete(engine);
     ChessBoard_delete(board);
 
-    closeChessHeuristics();
     closeZobrist();
     
     return 0;
@@ -143,7 +141,6 @@ int runHeuristicsTests(){
 int runSearchTest(char* start, int depth){
     initZobrist();
     ChessBoard* board = ChessBoard_new(start);
-    initChessHeuristics(board);
     SearchThread* thread = SearchThread_new(board);
     ChessBoard_print(board);
     SearchThread_setTimeout(thread, 5);
@@ -168,7 +165,6 @@ int runSearchTest(char* start, int depth){
 
     SearchThread_delete(thread);
     ChessBoard_delete(board);
-    closeChessHeuristics();
     closeZobrist();
     return 0;
 }

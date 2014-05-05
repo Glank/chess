@@ -21,7 +21,6 @@ int puzzle_main(int argc, char** argv){
     printf("Press Ctl-C to exit.\n");
     initZobrist();
     ChessBoard* board = ChessBoard_new(argv[1]);
-    initChessHeuristics(board);
     thread = SearchThread_new(board);
     SearchThread_setTimeout(thread, 0);
     SearchThread_setPrintEachNewLine(thread, 1);
@@ -33,7 +32,6 @@ int puzzle_main(int argc, char** argv){
     
     SearchThread_delete(thread);
     ChessBoard_delete(board);
-    closeChessHeuristics();
     closeZobrist();
     return 0;
 }
@@ -123,7 +121,6 @@ int game_main(int argc, char** argv){
         board = ChessBoard_new(argv[5]);
     else
         board = ChessBoard_new(FEN_START);
-    initChessHeuristics(board);
 
     int player = 0;
     while(!gameOver(board)){
@@ -136,7 +133,6 @@ int game_main(int argc, char** argv){
     ChessBoard_print(board);
     
     ChessBoard_delete(board);
-    closeChessHeuristics();
     closeZobrist();
     return 0;
 }

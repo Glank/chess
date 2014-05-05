@@ -13,39 +13,45 @@
 #define PAWN_PUSH_END_GAME 4
 #define PAWN_CONNECTION_VALUE 2
 
-ChessMoveGenerator* __gen; //a private generator just for evaluations
-
-void initChessHeuristics(ChessBoard* board){
+ChessHEngine* ChessHEngine_new(ChessBoard* board){
     srand(time(NULL));
-    __gen = ChessMoveGenerator_new(board);
+    ChessHEngine* self = (ChessHEngine*)malloc(sizeof(ChessHEngine));
+    self->board = board;
+    self->expGen = ChessMoveGenerator_new(board);
+    self->evalGen = ChessMoveGenerator_new(board);
+    self->table = TTable_new();
+    return self;
+}
+void ChessHEngine_delete(ChessHEngine* self){
+    ChessMoveGenerator_delete(self->expGen);
+    ChessMoveGenerator_delete(self->evalGen);
+    TTable_delete(self->table);
+    free(self);
 }
 
-void closeChessHeuristics(){
-    ChessMoveGenerator_delete(__gen);
-}
+ChessHNode* ChessHNode_new(ChessHNode* parent, ChessHEngine* engine){
+    ChessBoard* board = engine->board;
+    GameInfo* gameInfo = (GameInfo*)board->extra;
 
-ChessHNode* ChessHNode_new(ChessHNode* parent, ChessBoard* board){
-    GameInfo* info = (GameInfo*)board->extra;
     ChessHNode* self = (ChessHNode*)malloc(sizeof(ChessHNode));
     self->parent = parent;
     self->children = NULL;
     self->childrenCount = -1;
     if(parent!=NULL)
-        self->move = info->moves[info->movesCount-1];
+        self->move = gameInfo->moves[gameInfo->movesCount-1];
     else
         self->move = 0;
     self->toPlay = board->flags&TO_PLAY_FLAG?BLACK:WHITE;
     self->inCheck = ChessBoard_testForCheck(board);
-    self->hash = board->hash;
-    self->halfMoveNumber = info->movesCount;
+    self->info.hash = board->hash;
+    self->info.halfMoveNumber = gameInfo->movesCount;
     if(parent!=NULL)
-        self->depth = parent->depth+1;
+        self->info.depth = parent->info.depth+1;
     else
-        self->depth = 0; //is root
+        self->info.depth = 0; //is root
 
-    self->evaluation = 0;
-    self->state = UN_EVAL;
-    self->type = ESTIMATE;
+    self->info.evaluation = 0;
+    self->info.type = ESTIMATE;
     return self;
 }
 void ChessHNode_delete(ChessHNode* self){
@@ -61,12 +67,11 @@ void ChessHNode_deleteChildren(ChessHNode* self){
         self->children = NULL;
     }
 }
-void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
-    assert(self->state==UN_EVAL);
+void ChessHNode_evaluate(ChessHNode* self, ChessHEngine* engine){
+    ChessBoard* board = engine->board;
     if(ChessBoard_isInOptionalDraw(board)){
-        self->evaluation = 0;
-        self->state = FULL_EVAL;
-        self->type = ESTIMATE;
+        self->info.evaluation = 0;
+        self->info.type = ESTIMATE;
         return;
     }
     int eval = 0;
@@ -99,7 +104,7 @@ void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
     for(i=0; i < size; i++){
         pawn = info->pieceSets[WHITE]->piecesByType[PAWN_INDEX][i];
         rank = GET_RANK(pawn->location);
-        if(self->halfMoveNumber>50){ //if end game
+        if(self->info.halfMoveNumber>50){ //if end game
             push = rank-2;
             eval+= push*push*PAWN_PUSH_END_GAME; //push
         }
@@ -124,7 +129,7 @@ void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
     for(i=0; i < size; i++){
         pawn = info->pieceSets[BLACK]->piecesByType[PAWN_INDEX][i];
         rank = GET_RANK(pawn->location);
-        if(self->halfMoveNumber>50){ //if end game
+        if(self->info.halfMoveNumber>50){ //if end game
             push = 6-rank;
             eval-= push*push*PAWN_PUSH_END_GAME; //push
         }
@@ -176,67 +181,39 @@ void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board){
         file_delta = file-GET_FILE(king->location);
         file_delta = file_delta<0?-file_delta:file_delta; // abs(file_delta)
         md = rank_delta+file_delta;
-        eval+=favor*((2*cmd-md)*8-self->halfMoveNumber);
+        eval+=favor*((2*cmd-md)*8-self->info.halfMoveNumber);
     }
 
     //fuzz
     eval+=(rand()%11)-5;
 
-    self->evaluation = eval;
-    self->state = PRE_EVAL;
-    self->type = ESTIMATE;
+    self->info.evaluation = eval;
+    self->info.type = ESTIMATE;
 }
 
 //called if a node has no children
 void __judgeTeminal(ChessHNode* self){
-    self->state = FULL_EVAL;
-    self->type = ABSOLUTE;
+    self->info.type = ABSOLUTE;
     if(self->inCheck){
         if(self->toPlay==WHITE)
-            self->evaluation = INT_MIN+self->halfMoveNumber;
+            self->info.evaluation = INT_MIN+self->info.halfMoveNumber;
         else
-            self->evaluation = INT_MAX-self->halfMoveNumber;
+            self->info.evaluation = INT_MAX-self->info.halfMoveNumber;
     }
     else
-        self->evaluation = 0;
+        self->info.evaluation = 0;
 }
-
-//slow, should only be done on leaf nodes
-void ChessHNode_doFullEvaluation(ChessHNode* self, ChessBoard* board){
-    if(self->state == FULL_EVAL)
-        return;
-    if(self->state==UN_EVAL)
-        ChessHNode_doPreEvaluation(self, board);
-    ChessMoveGenerator_generateMoves(__gen, self->inCheck, NULL);
-    if(__gen->nextCount==0){
-        __judgeTeminal(self);
-        return;
-    }
-    self->state = FULL_EVAL;
-    //approximate mobility of the last player by their mobility last move
-    int whiteMobility, blackMobility;
-    if(self->toPlay==WHITE){
-        whiteMobility = __gen->nextCount;
-        blackMobility = self->parent==NULL?0:self->parent->childrenCount;
-    }
-    else{
-        blackMobility = __gen->nextCount;
-        whiteMobility = self->parent==NULL?0:self->parent->childrenCount;
-    }
-    self->evaluation+=whiteMobility;
-    self->evaluation-=blackMobility;
-}
-
 ChessHNode* __tempChildren[MOVE_GEN_MAX_ALLOCATED];
 int __tempChildrenCount;
 ChessHNode* __tempParent;
-void __pushAndPreEvalNewTempChild(ChessBoard* board){
-    ChessHNode* child = ChessHNode_new(__tempParent, board);
-    ChessHNode_doPreEvaluation(child, board);
+ChessHEngine* __tempEngine;
+void __pushAndEvalNewTempChild(ChessBoard* board){
+    ChessHNode* child = ChessHNode_new(__tempParent, __tempEngine);
+    ChessHNode_evaluate(child, __tempEngine);
     //sorted insertion
     int i;
     for(i = __tempChildrenCount-1; i>=0; i--){
-        if(__tempChildren[i]->evaluation<=child->evaluation)
+        if(__tempChildren[i]->info.evaluation<=child->info.evaluation)
             break;
         else
             __tempChildren[i+1] = __tempChildren[i];
@@ -244,18 +221,14 @@ void __pushAndPreEvalNewTempChild(ChessBoard* board){
     __tempChildren[i+1] = child;
     __tempChildrenCount++;
 }
-void __pushAndFullEvalNewTempChild(ChessBoard* board){
-    ChessHNode* child = ChessHNode_new(__tempParent, board);
-    ChessHNode_doFullEvaluation(child, board);
-    //unsorted push
-    __tempChildren[__tempChildrenCount++] = child;
-}
 
-void ChessHNode_expandBranches(ChessHNode* self, ChessMoveGenerator* gen){
+void ChessHNode_expand(ChessHNode* self, ChessHEngine* engine){
+    ChessMoveGenerator* gen = engine->expGen;
     assert(self->children==NULL);
     __tempChildrenCount = 0;
     __tempParent = self;
-    ChessMoveGenerator_generateMoves(gen, self->inCheck, &__pushAndPreEvalNewTempChild);
+    __tempEngine = engine;
+    ChessMoveGenerator_generateMoves(gen, self->inCheck, &__pushAndEvalNewTempChild);
     self->childrenCount = __tempChildrenCount;
     if(__tempChildrenCount==0){
         __judgeTeminal(self);
@@ -267,18 +240,11 @@ void ChessHNode_expandBranches(ChessHNode* self, ChessMoveGenerator* gen){
         self->children[i] = __tempChildren[i];
 }
 
-void ChessHNode_expandLeaves(ChessHNode* self, ChessMoveGenerator* gen){
-    assert(self->children==NULL);
-    __tempChildrenCount = 0;
-    __tempParent = self;
-    ChessMoveGenerator_generateMoves(gen, self->inCheck, &__pushAndFullEvalNewTempChild);
-    self->childrenCount = __tempChildrenCount;
-    if(__tempChildrenCount==0){
-        __judgeTeminal(self);
-        return;
-    }
-    self->children = (ChessHNode**)malloc((sizeof(ChessHNode*)*__tempChildrenCount));
-    int i;
-    for(i=0; i<__tempChildrenCount; i++)
-        self->children[i] = __tempChildren[i];
+TTable* TTable_new(){
+    TTable* self = (TTable*)malloc(sizeof(TTable));
+    self->minHalfMoveNumber = 0;
+    return self;
+}
+void TTable_delete(TTable* self){
+    free(self);
 }

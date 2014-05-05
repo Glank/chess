@@ -41,7 +41,7 @@ struct SearchThread{
     time_t max_seconds;
     time_t start_time;
 
-    ChessMoveGenerator* gen;
+    ChessHEngine* engine;
     ChessBoard* board;
     searchType_e searchType;
 
@@ -56,9 +56,9 @@ SearchThread* SearchThread_new(ChessBoard* board){
     self->bestLineMutex = ChessMutex_new();
     self->max_seconds = 60L;
 
-    self->gen = ChessMoveGenerator_new(board);
     self->board = board;
     self->searchType = PUZZLE;
+    self->engine = ChessHEngine_new(board);
 
     self->bestLineLength = 0;
     self->bestLineValue = 0;
@@ -66,7 +66,7 @@ SearchThread* SearchThread_new(ChessBoard* board){
     return self;
 }
 void SearchThread_delete(SearchThread* self){
-    ChessMoveGenerator_delete(self->gen);
+    ChessHEngine_delete(self->engine);
     ChessThread_delete(self->thread);
     ChessMutex_delete(self->bestLineMutex);
     free(self);
@@ -162,7 +162,7 @@ int alphabeta(
     }
     //quiecense extencions
     if(depth==0){
-        int delta = (node->evaluation)-(node->parent->evaluation);
+        int delta = (node->info.evaluation)-(node->parent->info.evaluation);
         delta = delta<0?-delta:delta;
         if(node->inCheck)
             delta = INT_MAX;
@@ -178,16 +178,16 @@ int alphabeta(
         }
         else{
             *lineoutLength = 0;
-            return node->evaluation;
+            return node->info.evaluation;
         }
     }
     //expand
-    ChessHNode_expandBranches(node, self->gen);
+    ChessHNode_expand(node, self->engine);
     //if terminal
     if(node->childrenCount==0){
         ChessHNode_deleteChildren(node);
         *lineoutLength = 0;
-        return node->evaluation;
+        return node->info.evaluation;
     }
     //if maximizing player
     int i, eval, best=0;
@@ -253,7 +253,7 @@ int depthSearch(SearchThread* self, ChessHNode* start,
 
 void* searchMain(void* args){
     SearchThread* self = (SearchThread*)args;
-    ChessHNode* start = ChessHNode_new(NULL, self->board);
+    ChessHNode* start = ChessHNode_new(NULL, self->engine);
     move_t tempLine[MAX_LINE_LENGTH];
     int tempLineLength, eval, depth, i;
     for(depth = 0; depth<MAX_DEPTH && !isDying(self); depth++){
