@@ -2,6 +2,7 @@
 #define CHESS_HEURISTICS_H_INCLUDE
 #include "moves.h"
 #include "board.h"
+#define TTABLE_SIZE 2048
 
 void initChessHeuristics(ChessBoard* board);
 void closeChessHeuristics();
@@ -10,6 +11,9 @@ typedef enum {ESTIMATE, ABSOLUTE} evalType_e;
 typedef enum {UN_EVAL, PRE_EVAL, FULL_EVAL} evalState_e;
 
 typedef struct ChessHNode ChessHNode;
+typedef struct TNode TNode;
+typedef struct TTable TTable;
+
 struct ChessHNode{
     move_t move;
     struct ChessHNode* parent;
@@ -32,4 +36,19 @@ void ChessHNode_doPreEvaluation(ChessHNode* self, ChessBoard* board);
 void ChessHNode_doFullEvaluation(ChessHNode* self, ChessBoard* board);
 void ChessHNode_expandBranches(ChessHNode* self, ChessMoveGenerator* gen);
 void ChessHNode_expandLeaves(ChessHNode* self, ChessMoveGenerator* gen);
+
+struct TNode{
+    zob_hash_t hash;
+    int halfMoveNumber;
+    int depth;
+    int evaluation;
+    evalState_e state;
+    evalType_e type;
+};
+struct TTable{
+    TNode nodes[TTABLE_SIZE];
+    int minHalfMoveNumber;
+}
+TTable* TTable_new();
+void TTable_delete(TTable* self);
 #endif
