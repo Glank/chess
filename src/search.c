@@ -189,11 +189,11 @@ int alphabeta(
         *lineoutLength = 0;
         return node->info.evaluation;
     }
-    //if maximizing player
     int i, eval, best=0;
     ChessHNode* child;
     move_t lines[node->childrenCount][depth+quiecense+deepQuiecense];
     int lineLengths[node->childrenCount];
+    //if maximizing player
     if(node->toPlay==WHITE){
         for(i=node->childrenCount-1; i>=0; i--){
             child = node->children[i];
