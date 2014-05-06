@@ -120,8 +120,8 @@ int runHeuristicsTests(){
     ChessHNode* child;
     for(i = 0; i < root->children[47]->childrenCount; i++){
         child = root->children[47]->children[i];
-        if(child->info.evaluation < minEval){
-            minEval = child->info.evaluation;
+        if(child->evaluation < minEval){
+            minEval = child->evaluation;
             minI = i;
         }
     }

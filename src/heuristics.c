@@ -19,13 +19,11 @@ ChessHEngine* ChessHEngine_new(ChessBoard* board){
     self->board = board;
     self->expGen = ChessMoveGenerator_new(board);
     self->evalGen = ChessMoveGenerator_new(board);
-    self->table = TTable_new();
     return self;
 }
 void ChessHEngine_delete(ChessHEngine* self){
     ChessMoveGenerator_delete(self->expGen);
     ChessMoveGenerator_delete(self->evalGen);
-    TTable_delete(self->table);
     free(self);
 }
 
@@ -43,15 +41,15 @@ ChessHNode* ChessHNode_new(ChessHNode* parent, ChessHEngine* engine){
         self->move = 0;
     self->toPlay = board->flags&TO_PLAY_FLAG?BLACK:WHITE;
     self->inCheck = ChessBoard_testForCheck(board);
-    self->info.hash = board->hash;
-    self->info.halfMoveNumber = gameInfo->movesCount;
+    self->hash = board->hash;
+    self->halfMoveNumber = gameInfo->movesCount;
     if(parent!=NULL)
-        self->info.depth = parent->info.depth+1;
+        self->depth = parent->depth+1;
     else
-        self->info.depth = 0; //is root
+        self->depth = 0; //is root
 
-    self->info.evaluation = 0;
-    self->info.type = ESTIMATE;
+    self->evaluation = 0;
+    self->type = ESTIMATE;
     return self;
 }
 void ChessHNode_delete(ChessHNode* self){
@@ -70,8 +68,8 @@ void ChessHNode_deleteChildren(ChessHNode* self){
 void ChessHNode_evaluate(ChessHNode* self, ChessHEngine* engine){
     ChessBoard* board = engine->board;
     if(ChessBoard_isInOptionalDraw(board)){
-        self->info.evaluation = 0;
-        self->info.type = ESTIMATE;
+        self->evaluation = 0;
+        self->type = ESTIMATE;
         return;
     }
     int eval = 0;
@@ -104,7 +102,7 @@ void ChessHNode_evaluate(ChessHNode* self, ChessHEngine* engine){
     for(i=0; i < size; i++){
         pawn = info->pieceSets[WHITE]->piecesByType[PAWN_INDEX][i];
         rank = GET_RANK(pawn->location);
-        if(self->info.halfMoveNumber>50){ //if end game
+        if(self->halfMoveNumber>50){ //if end game
             push = rank-2;
             eval+= push*push*PAWN_PUSH_END_GAME; //push
         }
@@ -129,7 +127,7 @@ void ChessHNode_evaluate(ChessHNode* self, ChessHEngine* engine){
     for(i=0; i < size; i++){
         pawn = info->pieceSets[BLACK]->piecesByType[PAWN_INDEX][i];
         rank = GET_RANK(pawn->location);
-        if(self->info.halfMoveNumber>50){ //if end game
+        if(self->halfMoveNumber>50){ //if end game
             push = 6-rank;
             eval-= push*push*PAWN_PUSH_END_GAME; //push
         }
@@ -181,27 +179,27 @@ void ChessHNode_evaluate(ChessHNode* self, ChessHEngine* engine){
         file_delta = file-GET_FILE(king->location);
         file_delta = file_delta<0?-file_delta:file_delta; // abs(file_delta)
         md = rank_delta+file_delta;
-        eval+=favor*((2*cmd-md)*8-self->info.halfMoveNumber);
+        eval+=favor*((2*cmd-md)*8-self->halfMoveNumber);
     }
 
     //fuzz
     eval+=(rand()%11)-5;
 
-    self->info.evaluation = eval;
-    self->info.type = ESTIMATE;
+    self->evaluation = eval;
+    self->type = ESTIMATE;
 }
 
 //called if a node has no children
 void __judgeTeminal(ChessHNode* self){
-    self->info.type = ABSOLUTE;
+    self->type = ABSOLUTE;
     if(self->inCheck){
         if(self->toPlay==WHITE)
-            self->info.evaluation = INT_MIN+self->info.halfMoveNumber;
+            self->evaluation = INT_MIN+self->halfMoveNumber;
         else
-            self->info.evaluation = INT_MAX-self->info.halfMoveNumber;
+            self->evaluation = INT_MAX-self->halfMoveNumber;
     }
     else
-        self->info.evaluation = 0;
+        self->evaluation = 0;
 }
 ChessHNode* __tempChildren[MOVE_GEN_MAX_ALLOCATED];
 int __tempChildrenCount;
@@ -213,7 +211,7 @@ void __pushAndEvalNewTempChild(ChessBoard* board){
     //sorted insertion
     int i;
     for(i = __tempChildrenCount-1; i>=0; i--){
-        if(__tempChildren[i]->info.evaluation<=child->info.evaluation)
+        if(__tempChildren[i]->evaluation<=child->evaluation)
             break;
         else
             __tempChildren[i+1] = __tempChildren[i];
@@ -240,11 +238,3 @@ void ChessHNode_expand(ChessHNode* self, ChessHEngine* engine){
         self->children[i] = __tempChildren[i];
 }
 
-TTable* TTable_new(){
-    TTable* self = (TTable*)malloc(sizeof(TTable));
-    self->minHalfMoveNumber = 0;
-    return self;
-}
-void TTable_delete(TTable* self){
-    free(self);
-}

@@ -6,6 +6,46 @@
 #include "narrator.h"
 #include "heuristics.h"
 #define MAX_DEPTH 8
+#define TTABLE_SIZE 2048
+
+typedef struct TNode TNode;
+struct TNode{
+    zob_hash_t hash;
+    int evaluation;
+    int depth;
+    int isCut;
+    int halfMoveNumber;
+};
+struct TTable{
+    TNode nodes[TTABLE_SIZE];
+    int minHalfMoveNumber;
+};
+TTable* TTable_new(){
+    TTable* self = (TTable*)malloc(sizeof(TTable));
+    self->minHalfMoveNumber = 0;
+    int i;
+    for(i = 0; i < TTABLE_SIZE; i++)
+        nodes[i].hash = 0;
+    return self;
+}
+void TTable_delete(TTable* self){
+    free(self);
+}
+void TTable_trySave(TTable* self, TNode* node){
+    int bucket = node->hash%TTABLE_SIZE;
+    TNode* cur = self->nodes+bucket;
+    if(cur->hash==0 || cur->halfMoveNumber<self->minHalfMoveNumber){
+        (*cur) = (*self);
+        return;
+    }
+    if(cur->isCut){
+        if(node->isCut && node->depth <= cur->depth)
+            (*cur) = (*self);
+        return;
+    }
+    if(node->isCut || node->depth <= cur->depth)
+        (*cur) = (*self);
+}
 
 const int DEPTH_ORDERS[4][9] = {
     {1,2,3,4,5,6,7,8,9}, //opening depths
@@ -42,6 +82,7 @@ struct SearchThread{
     time_t start_time;
 
     ChessHEngine* engine;
+    TTable* table;
     ChessBoard* board;
     searchType_e searchType;
 
@@ -50,7 +91,7 @@ struct SearchThread{
     int bestLineValue;
     int printEachNewLine;
 };
-SearchThread* SearchThread_new(ChessBoard* board){
+SearchThread* SearchThread_new(ChessBoard* board, TTable* table){
     SearchThread* self = (SearchThread*)malloc(sizeof(SearchThread));
     self->thread = ChessThread_new(&searchMain);
     self->bestLineMutex = ChessMutex_new();
@@ -59,6 +100,7 @@ SearchThread* SearchThread_new(ChessBoard* board){
     self->board = board;
     self->searchType = PUZZLE;
     self->engine = ChessHEngine_new(board);
+    self->table = table;
 
     self->bestLineLength = 0;
     self->bestLineValue = 0;
@@ -162,7 +204,7 @@ int alphabeta(
     }
     //quiecense extencions
     if(depth==0){
-        int delta = (node->info.evaluation)-(node->parent->info.evaluation);
+        int delta = (node->evaluation)-(node->parent->evaluation);
         delta = delta<0?-delta:delta;
         if(node->inCheck)
             delta = INT_MAX;
@@ -178,7 +220,7 @@ int alphabeta(
         }
         else{
             *lineoutLength = 0;
-            return node->info.evaluation;
+            return node->evaluation;
         }
     }
     //expand
@@ -187,7 +229,7 @@ int alphabeta(
     if(node->childrenCount==0){
         ChessHNode_deleteChildren(node);
         *lineoutLength = 0;
-        return node->info.evaluation;
+        return node->evaluation;
     }
     int i, eval, best=0;
     ChessHNode* child;

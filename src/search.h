@@ -8,6 +8,9 @@
 typedef enum {OPENING=0, MIDGAME=1, ENDGAME=2, PUZZLE=3} searchType_e;
 
 typedef struct SearchThread SearchThread;
+typedef struct TTable TTable;
+TTable* TTable_new();
+void TTable_delete(TTable* self);
 
 SearchThread* SearchThread_new(ChessBoard* board);
 void SearchThread_delete(SearchThread* self);
