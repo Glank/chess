@@ -6,7 +6,7 @@
 #include "moves.h"
 #include <time.h>
 #define MAX_LINE_LENGTH 64
-#define TTABLE_SIZE 2048
+#define TTABLE_SIZE 100000
 
 typedef enum {OPENING=0, MIDGAME=1, ENDGAME=2, PUZZLE=3} searchType_e;
 

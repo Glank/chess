@@ -135,19 +135,19 @@ const int DEPTH_ORDERS[4][9] = {
     {1,2,3,4,5,6,7,8,9}, //opening depths
     {1,2,2,3,3,3,4,4,4}, //midgame depths
     {1,2,2,3,3,4,4,5,5}, //endgame depths
-    {1,2,2,3,3,3,4,4,4}  //puzzle  depths
+    {1,2,2,3,3,4,4,4,5}  //puzzle  depths
 };
 const int QUIECENSE_ORDERS[4][9] = {
     {0,0,1,1,2,2,3,3,4}, //opening depths
     {0,0,1,1,2,2,3,3,4}, //midgame depths
     {0,0,1,1,2,2,3,3,4}, //endgame depths
-    {0,0,1,1,2,2,3,3,4}  //puzzle  depths
+    {1,0,2,1,3,2,4,6,5}  //puzzle  depths
 };
 const int DEEP_QUIECENSE_ORDERS[4][9] = {
     {0,0,1,1,2,2,3,3,4}, //opening depths
     {0,0,1,1,2,2,3,3,4}, //midgame depths
     {0,0,1,1,2,2,3,3,4}, //endgame depths
-    {0,0,1,1,2,2,3,3,4}  //puzzle  depths
+    {0,0,0,0,0,0,0,0,0}  //puzzle  depths
 };
 
 void* searchMain(void* args);
