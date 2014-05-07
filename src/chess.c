@@ -21,7 +21,8 @@ int puzzle_main(int argc, char** argv){
     printf("Press Ctl-C to exit.\n");
     initZobrist();
     ChessBoard* board = ChessBoard_new(argv[1]);
-    thread = SearchThread_new(board);
+    TTable* table = TTable_new();
+    thread = SearchThread_new(board, table);
     SearchThread_setTimeout(thread, 0);
     SearchThread_setPrintEachNewLine(thread, 1);
 
@@ -31,13 +32,14 @@ int puzzle_main(int argc, char** argv){
     SearchThread_join(thread);
     
     SearchThread_delete(thread);
+    TTable_delete(table);
     ChessBoard_delete(board);
     closeZobrist();
     return 0;
 }
 
-void doAIMove(ChessBoard* board, int seconds){
-    SearchThread* thread = SearchThread_new(board);
+void doAIMove(ChessBoard* board, TTable* table, int seconds){
+    SearchThread* thread = SearchThread_new(board, table);
     SearchThread_setTimeout(thread, seconds);
     SearchThread_start(thread);
     SearchThread_join(thread);
@@ -61,11 +63,11 @@ void doHumanMove(ChessBoard* board){
     ChessBoard_makeMove(board, move);
 }
 
-void doMove(ChessBoard* board, int human, int seconds){
+void doMove(ChessBoard* board, TTable* table, int human, int seconds){
     if(human)
         doHumanMove(board);
     else
-        doAIMove(board, seconds);
+        doAIMove(board, table, seconds);
 }
 
 int ChessBoard_testForCheckmate(ChessBoard* self){
@@ -114,6 +116,7 @@ int game_main(int argc, char** argv){
         sscanf(argv[4], "%d", &seconds);
     }
     initZobrist();
+    TTable* table = TTable_new();
     ChessBoard* board;
     if(!sec_specified && argc>3)
         board = ChessBoard_new(argv[3]);
@@ -126,13 +129,14 @@ int game_main(int argc, char** argv){
     while(!gameOver(board)){
         printf("%016llX\n", (long long unsigned int)board->hash);
         ChessBoard_print(board);
-        doMove(board, players[player], seconds);
+        doMove(board, table, players[player], seconds);
         player = player?0:1;
     }
     printf("%016llX\n", (long long unsigned int)board->hash);
     ChessBoard_print(board);
     
     ChessBoard_delete(board);
+    TTable_delete(table);
     closeZobrist();
     return 0;
 }

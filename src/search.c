@@ -4,37 +4,21 @@
 #include <limits.h>
 #include "search.h"
 #include "narrator.h"
-#include "heuristics.h"
 #define MAX_DEPTH 8
-#define TTABLE_SIZE 2048
 
-typedef struct TNode TNode;
-struct TNode{
-    zob_hash_t hash;
-    int evaluation;
-    int depth;
-    int isCut;
-    int halfMoveNumber;
-};
-struct TTable{
-    TNode nodes[TTABLE_SIZE];
-    TNode* sortingRoom[MOVE_GEN_MAX_ALLOCATED];
-    ChessHNode* mergeRoom[MOVE_GEN_MAX_ALLOCATED];
-    int minHalfMoveNumber;
-};
 TTable* TTable_new(){
     TTable* self = (TTable*)malloc(sizeof(TTable));
     self->minHalfMoveNumber = 0;
     int i;
     for(i = 0; i < TTABLE_SIZE; i++)
-        nodes[i].hash = 0;
+        self->nodes[i].hash = 0;
     return self;
 }
 void TTable_delete(TTable* self){
     free(self);
 }
 TNode* TTable_lookup(TTable* self, ChessHNode* state){
-    int bucket = node->hash%TTABLE_SIZE;
+    int bucket = state->hash%TTABLE_SIZE;
     TNode* ret = self->nodes+bucket;
     if(ret->hash==state->hash)
         return ret;
@@ -44,47 +28,47 @@ void TTable_trySave(TTable* self, TNode* node){
     int bucket = node->hash%TTABLE_SIZE;
     TNode* cur = self->nodes+bucket;
     if(cur->hash==0 || cur->halfMoveNumber<self->minHalfMoveNumber){
-        (*cur) = (*self);
+        (*cur) = (*node);
         return;
     }
     if(cur->isCut){
         if(node->isCut && node->depth <= cur->depth)
-            (*cur) = (*self);
+            (*cur) = (*node);
         return;
     }
     if(node->isCut || node->depth <= cur->depth)
-        (*cur) = (*self);
+        (*cur) = (*node);
 }
 int TTable_isInverted(TTable* self, int minimizing, 
-    ChessHNode* a, TNode* a_node, ChessHNode* b TNode* b_node){
+    ChessHNode* a, TNode* a_node, ChessHNode* b, TNode* b_node){
     if(a_node==NULL){
         if(b_node==NULL){
             if(minimizing)
                 return a->evaluation > b->evaluation;
             else
-                return a->evaluationi < b->evaluation;
+                return a->evaluation < b->evaluation;
         }
         else{
-            if(b->isCut)
+            if(b_node->isCut)
                 return 1;
             else if(minimizing)
                 return a->evaluation > b_node->evaluation;
             else
-                return a->evaluationi < b_node->evaluation;
+                return a->evaluation < b_node->evaluation;
         }
     }
     else{
         if(b_node==NULL){
-            if(a->isCut)
+            if(a_node->isCut)
                 return 0;
             else if(minimizing)
                 return a_node->evaluation > b->evaluation;
             else
                 return a_node->evaluation < b->evaluation;
         }
-        if(a->isCut && !b->isCut)
-            return 0
-        else if(!a->isCut && b->isCut)
+        if(a_node->isCut && !b_node->isCut)
+            return 0;
+        else if(!a_node->isCut && b_node->isCut)
             return 1;
         else if(minimizing)
             return a_node->evaluation > b_node->evaluation;
@@ -96,12 +80,12 @@ void TTable_recursiveMergeSort(TTable* self, ChessHNode* toSort, int offset, int
     if(length==1)
         return;
     else if(length==2){
-        if(TTable_isInverted(self,
+        if(TTable_isInverted(self, toSort->toPlay,
             toSort->children[offset],self->sortingRoom[offset],
             toSort->children[offset+1],self->sortingRoom[offset+1])){
             //invert
             TNode* ttemp = self->sortingRoom[offset];
-            ChessHNode* htemp = self->children[offset];
+            ChessHNode* htemp = toSort->children[offset];
             self->sortingRoom[offset] = self->sortingRoom[offset+1];
             toSort->children[offset] = toSort->children[offset+1];
             self->sortingRoom[offset+1] = ttemp;
@@ -118,23 +102,26 @@ void TTable_recursiveMergeSort(TTable* self, ChessHNode* toSort, int offset, int
         //merge
         int i;
         for(i=0; i<length; i++){
-            if(l_len==0 || TTable_isInverted(self,
+            if(l_len==0 || (r_len!=0 && TTable_isInverted(self, toSort->toPlay,
                 toSort->children[l_off],self->sortingRoom[l_off],
-                toSort->children[r_off],self->sortingRoom[r_off])){
-                self->mergeRoom[i] = toSort->sortingRoom[r_off];
+                toSort->children[r_off],self->sortingRoom[r_off]))){
+                self->tMergeRoom[i] = self->sortingRoom[r_off];
+                self->hMergeRoom[i] = toSort->children[r_off];
                 r_off++;
                 r_len--;
             }
             else{
-                self->mergeRoom[i] = toSort->sortingRoom[l_off];
+                self->tMergeRoom[i] = self->sortingRoom[l_off];
+                self->hMergeRoom[i] = toSort->children[l_off];
                 l_off++;
                 l_len--;
             }
-            i++;
         }
         //copy from merge room
-        for(i=0; i<length; i++)
+        for(i=0; i<length; i++){
             toSort->children[offset+i] = self->hMergeRoom[i];
+            self->sortingRoom[offset+i] = self->tMergeRoom[i];
+        }
     }
 }
 void TTable_sortChildren(TTable* self, ChessHNode* toSort){
@@ -170,24 +157,6 @@ int alphabeta(
     int alpha, int beta,
     move_t* lineout, int* lineoutLength);
 int isDying(SearchThread* self);
-
-struct SearchThread{
-    ChessThread* thread;
-    ChessMutex* bestLineMutex;
-    int runFlag; //1 = continue, 0 = stop ASAP
-    time_t max_seconds;
-    time_t start_time;
-
-    ChessHEngine* engine;
-    TTable* table;
-    ChessBoard* board;
-    searchType_e searchType;
-
-    move_t bestLine[MAX_LINE_LENGTH];
-    int bestLineLength;
-    int bestLineValue;
-    int printEachNewLine;
-};
 SearchThread* SearchThread_new(ChessBoard* board, TTable* table){
     SearchThread* self = (SearchThread*)malloc(sizeof(SearchThread));
     self->thread = ChessThread_new(&searchMain);
@@ -295,6 +264,11 @@ int alphabeta(
     int depth, int quiecense, int deepQuiecense,
     int alpha, int beta,
     move_t* lineout, int* lineoutLength){
+    TNode* tnode = TTable_lookup(self->table, node);
+    if(tnode!=NULL && tnode->depth>=depth){
+        *lineoutLength = 0;
+        return tnode->evaluation;
+    }
     if(isDying(self)){
         (*lineoutLength) = 0;
         return 0;
@@ -328,24 +302,33 @@ int alphabeta(
         *lineoutLength = 0;
         return node->evaluation;
     }
-    int i, eval, best=0;
+    //else, sort
+    TTable_sortChildren(self->table, node);
+
+    int i, best=0;
     ChessHNode* child;
+    TNode tnew;
+    tnew.depth = depth-1;
+    tnew.halfMoveNumber = node->halfMoveNumber+1;
+    tnew.isCut = 0;
     move_t lines[node->childrenCount][depth+quiecense+deepQuiecense];
     int lineLengths[node->childrenCount];
     //if maximizing player
     if(node->toPlay==WHITE){
-        for(i=node->childrenCount-1; i>=0; i--){
+        for(i=0; !tnew.isCut && i<node->childrenCount; i++){
             child = node->children[i];
+            tnew.hash = child->hash;
             ChessBoard_makeMove(self->board, child->move);
-            eval = alphabeta(self, child, depth-1, quiecense, deepQuiecense, 
+            tnew.evaluation = alphabeta(self, child, depth-1, quiecense, deepQuiecense, 
                 alpha, beta, lines[i]+1, lineLengths+i);
             ChessBoard_unmakeMove(self->board);
-            if(eval>alpha){
-                alpha = eval;
+            if(tnew.evaluation>alpha){
+                alpha = tnew.evaluation;
                 best = i;
             }
             if(beta < alpha)
-                break;
+                tnew.isCut=1;
+            TTable_trySave(self->table, &tnew);
         }
         lineout[0] = node->children[best]->move;
         *lineoutLength = lineLengths[best]+1;
@@ -356,18 +339,20 @@ int alphabeta(
     }
     //minimizing player
     else{
-        for(i=0; i<node->childrenCount; i++){
+        for(i=0; !tnew.isCut && i<node->childrenCount; i++){
             child = node->children[i];
+            tnew.hash = child->hash;
             ChessBoard_makeMove(self->board, child->move);
-            eval = alphabeta(self, child, depth-1, quiecense, deepQuiecense, 
+            tnew.evaluation = alphabeta(self, child, depth-1, quiecense, deepQuiecense, 
                 alpha, beta, lines[i]+1, lineLengths+i);
             ChessBoard_unmakeMove(self->board);
-            if(eval<beta){
-                beta = eval;
+            if(tnew.evaluation<beta){
+                beta = tnew.evaluation;
                 best = i;
             }
             if(beta < alpha)
-                break;
+                tnew.isCut=1;
+            TTable_trySave(self->table, &tnew);
         }
         lineout[0] = node->children[best]->move;
         *lineoutLength = lineLengths[best]+1;
@@ -383,6 +368,7 @@ int depthSearch(SearchThread* self, ChessHNode* start,
     int real_depth = DEPTH_ORDERS[self->searchType][depth];
     int quiecense = QUIECENSE_ORDERS[self->searchType][depth];
     int deep_quiecense = DEEP_QUIECENSE_ORDERS[self->searchType][depth];
+    self->table->minHalfMoveNumber = start->halfMoveNumber;
     int eval = alphabeta(
         self, start, real_depth, quiecense, deep_quiecense,
         INT_MIN, INT_MAX, line, lineLength

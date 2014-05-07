@@ -208,16 +208,7 @@ ChessHEngine* __tempEngine;
 void __pushAndEvalNewTempChild(ChessBoard* board){
     ChessHNode* child = ChessHNode_new(__tempParent, __tempEngine);
     ChessHNode_evaluate(child, __tempEngine);
-    //sorted insertion
-    int i;
-    for(i = __tempChildrenCount-1; i>=0; i--){
-        if(__tempChildren[i]->evaluation<=child->evaluation)
-            break;
-        else
-            __tempChildren[i+1] = __tempChildren[i];
-    }
-    __tempChildren[i+1] = child;
-    __tempChildrenCount++;
+    __tempChildren[__tempChildrenCount++] = child;
 }
 
 void ChessHNode_expand(ChessHNode* self, ChessHEngine* engine){

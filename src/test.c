@@ -141,7 +141,8 @@ int runHeuristicsTests(){
 int runSearchTest(char* start, int depth){
     initZobrist();
     ChessBoard* board = ChessBoard_new(start);
-    SearchThread* thread = SearchThread_new(board);
+    TTable* table = TTable_new();
+    SearchThread* thread = SearchThread_new(board, table);
     ChessBoard_print(board);
     SearchThread_setTimeout(thread, 5);
 
@@ -164,6 +165,7 @@ int runSearchTest(char* start, int depth){
     }
 
     SearchThread_delete(thread);
+    TTable_delete(table);
     ChessBoard_delete(board);
     closeZobrist();
     return 0;
@@ -276,8 +278,8 @@ int runSigTest(){
 }
 
 int main(void){
-    runPerftTests();
-    //runSearchTests();
+    //runPerftTests();
+    runSearchTests();
     //runGenTest(POS_4);
     //runAlgebraicNotationTest();
     //runThreadTests();
