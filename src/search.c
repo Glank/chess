@@ -18,6 +18,8 @@ struct TNode{
 };
 struct TTable{
     TNode nodes[TTABLE_SIZE];
+    TNode* sortingRoom[MOVE_GEN_MAX_ALLOCATED];
+    ChessHNode* mergeRoom[MOVE_GEN_MAX_ALLOCATED];
     int minHalfMoveNumber;
 };
 TTable* TTable_new(){
@@ -30,6 +32,13 @@ TTable* TTable_new(){
 }
 void TTable_delete(TTable* self){
     free(self);
+}
+TNode* TTable_lookup(TTable* self, ChessHNode* state){
+    int bucket = node->hash%TTABLE_SIZE;
+    TNode* ret = self->nodes+bucket;
+    if(ret->hash==state->hash)
+        return ret;
+    return NULL;
 }
 void TTable_trySave(TTable* self, TNode* node){
     int bucket = node->hash%TTABLE_SIZE;
@@ -45,6 +54,94 @@ void TTable_trySave(TTable* self, TNode* node){
     }
     if(node->isCut || node->depth <= cur->depth)
         (*cur) = (*self);
+}
+int TTable_isInverted(TTable* self, int minimizing, 
+    ChessHNode* a, TNode* a_node, ChessHNode* b TNode* b_node){
+    if(a_node==NULL){
+        if(b_node==NULL){
+            if(minimizing)
+                return a->evaluation > b->evaluation;
+            else
+                return a->evaluationi < b->evaluation;
+        }
+        else{
+            if(b->isCut)
+                return 1;
+            else if(minimizing)
+                return a->evaluation > b_node->evaluation;
+            else
+                return a->evaluationi < b_node->evaluation;
+        }
+    }
+    else{
+        if(b_node==NULL){
+            if(a->isCut)
+                return 0;
+            else if(minimizing)
+                return a_node->evaluation > b->evaluation;
+            else
+                return a_node->evaluation < b->evaluation;
+        }
+        if(a->isCut && !b->isCut)
+            return 0
+        else if(!a->isCut && b->isCut)
+            return 1;
+        else if(minimizing)
+            return a_node->evaluation > b_node->evaluation;
+        else
+            return a_node->evaluation < b_node->evaluation;
+    }
+}
+void TTable_recursiveMergeSort(TTable* self, ChessHNode* toSort, int offset, int length){
+    if(length==1)
+        return;
+    else if(length==2){
+        if(TTable_isInverted(self,
+            toSort->children[offset],self->sortingRoom[offset],
+            toSort->children[offset+1],self->sortingRoom[offset+1])){
+            //invert
+            TNode* ttemp = self->sortingRoom[offset];
+            ChessHNode* htemp = self->children[offset];
+            self->sortingRoom[offset] = self->sortingRoom[offset+1];
+            toSort->children[offset] = toSort->children[offset+1];
+            self->sortingRoom[offset+1] = ttemp;
+            toSort->children[offset+1] = htemp;
+        }
+    }
+    else{
+        int l_off = offset;
+        int r_off = offset+length/2;
+        int l_len = r_off-l_off;
+        int r_len = length/2;
+        TTable_recursiveMergeSort(self, toSort, l_off, l_len);
+        TTable_recursiveMergeSort(self, toSort, r_off, r_len);
+        //merge
+        int i;
+        for(i=0; i<length; i++){
+            if(l_len==0 || TTable_isInverted(self,
+                toSort->children[l_off],self->sortingRoom[l_off],
+                toSort->children[r_off],self->sortingRoom[r_off])){
+                self->mergeRoom[i] = toSort->sortingRoom[r_off];
+                r_off++;
+                r_len--;
+            }
+            else{
+                self->mergeRoom[i] = toSort->sortingRoom[l_off];
+                l_off++;
+                l_len--;
+            }
+            i++;
+        }
+        //copy from merge room
+        for(i=0; i<length; i++)
+            toSort->children[offset+i] = self->hMergeRoom[i];
+    }
+}
+void TTable_sortChildren(TTable* self, ChessHNode* toSort){
+    int i;
+    for(i = 0; i < toSort->childrenCount; i++)
+        self->sortingRoom[i] = TTable_lookup(self, toSort->children[i]);
+    TTable_recursiveMergeSort(self, toSort, 0, toSort->childrenCount);
 }
 
 const int DEPTH_ORDERS[4][9] = {
