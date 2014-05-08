@@ -69,7 +69,7 @@ void ChessHNode_evaluate(ChessHNode* self, ChessHEngine* engine){
     ChessBoard* board = engine->board;
     if(ChessBoard_isInOptionalDraw(board)){
         self->evaluation = 0;
-        self->type = ESTIMATE;
+        self->type = ABSOLUTE;
         return;
     }
     int eval = 0;
@@ -158,13 +158,13 @@ void ChessHNode_evaluate(ChessHNode* self, ChessHEngine* engine){
         king = info->pieceSets[WHITE]->piecesByType[KING_INDEX][0];
         op_king = info->pieceSets[BLACK]->piecesByType[KING_INDEX][0];
         add_mopup=1;
-        favor=1;
+        favor=10;
     }//if black is winning...
     else if(white_pieces_value<ROOK_VALUE && black_pieces_value>=ROOK_VALUE){
         king = info->pieceSets[WHITE]->piecesByType[KING_INDEX][0];
         op_king = info->pieceSets[BLACK]->piecesByType[KING_INDEX][0];
         add_mopup=1;
-        favor=-1;
+        favor=-10;
     }
     if(add_mopup){
         rank = GET_RANK(op_king->location);
@@ -194,9 +194,9 @@ void __judgeTeminal(ChessHNode* self){
     self->type = ABSOLUTE;
     if(self->inCheck){
         if(self->toPlay==WHITE)
-            self->evaluation = INT_MIN+self->halfMoveNumber;
+            self->evaluation = INT_MIN;
         else
-            self->evaluation = INT_MAX-self->halfMoveNumber;
+            self->evaluation = INT_MAX;
     }
     else
         self->evaluation = 0;

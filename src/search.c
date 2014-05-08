@@ -4,7 +4,7 @@
 #include <limits.h>
 #include "search.h"
 #include "narrator.h"
-#define MAX_DEPTH 8
+#define MAX_DEPTH 13
 
 TTable* TTable_new(){
     TTable* self = (TTable*)malloc(sizeof(TTable));
@@ -131,24 +131,9 @@ void TTable_sortChildren(TTable* self, ChessHNode* toSort){
     TTable_recursiveMergeSort(self, toSort, 0, toSort->childrenCount);
 }
 
-const int DEPTH_ORDERS[4][9] = {
-    {1,2,3,4,5,6,7,8,9}, //opening depths
-    {1,2,2,3,3,3,4,4,4}, //midgame depths
-    {1,2,2,3,3,4,4,5,5}, //endgame depths
-    {1,2,2,3,3,4,4,4,5}  //puzzle  depths
-};
-const int QUIECENSE_ORDERS[4][9] = {
-    {0,0,1,1,2,2,3,3,4}, //opening depths
-    {0,0,1,1,2,2,3,3,4}, //midgame depths
-    {0,0,1,1,2,2,3,3,4}, //endgame depths
-    {1,0,2,1,3,2,4,6,5}  //puzzle  depths
-};
-const int DEEP_QUIECENSE_ORDERS[4][9] = {
-    {0,0,1,1,2,2,3,3,4}, //opening depths
-    {0,0,1,1,2,2,3,3,4}, //midgame depths
-    {0,0,1,1,2,2,3,3,4}, //endgame depths
-    {0,0,0,0,0,0,0,0,0}  //puzzle  depths
-};
+const int DEPTH_ORDERS[14] =          {1,2,2,3,3,4,5,5,6,7,7,8,9,9};
+const int QUIECENSE_ORDERS[14] =      {1,0,2,1,3,2,1,3,2,1,3,2,1,2};
+const int DEEP_QUIECENSE_ORDERS[14] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 void* searchMain(void* args);
 int alphabeta(
@@ -266,12 +251,20 @@ int alphabeta(
     move_t* lineout, int* lineoutLength){
     TNode* tnode = TTable_lookup(self->table, node);
     if(tnode!=NULL && tnode->depth>=depth){
-        *lineoutLength = 0;
+        (*lineoutLength) = 0;
+        if(tnode->evaluation==INT_MIN)
+            return INT_MIN+node->halfMoveNumber+depth;
+        if(tnode->evaluation==INT_MAX)
+            return INT_MAX-(node->halfMoveNumber+depth);
         return tnode->evaluation;
     }
     if(isDying(self)){
         (*lineoutLength) = 0;
         return 0;
+    }
+    if(node->type==ABSOLUTE){
+        (*lineoutLength) = 0;
+        return node->evaluation;
     }
     //quiecense extencions
     if(depth==0){
@@ -365,9 +358,9 @@ int alphabeta(
 
 int depthSearch(SearchThread* self, ChessHNode* start,
     int depth, move_t* line, int* lineLength){
-    int real_depth = DEPTH_ORDERS[self->searchType][depth];
-    int quiecense = QUIECENSE_ORDERS[self->searchType][depth];
-    int deep_quiecense = DEEP_QUIECENSE_ORDERS[self->searchType][depth];
+    int real_depth = DEPTH_ORDERS[depth];
+    int quiecense = QUIECENSE_ORDERS[depth];
+    int deep_quiecense = DEEP_QUIECENSE_ORDERS[depth];
     self->table->minHalfMoveNumber = start->halfMoveNumber;
     int eval = alphabeta(
         self, start, real_depth, quiecense, deep_quiecense,

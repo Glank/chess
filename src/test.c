@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <assert.h>
 #include <signal.h>
 #include "board.h"
@@ -278,8 +279,10 @@ int runSigTest(){
 }
 
 int main(void){
+    printf("%d\n", INT_MAX);
+    printf("%d\n", INT_MAX-50);
     //runPerftTests();
-    runSearchTests();
+    //runSearchTests();
     //runGenTest(POS_4);
     //runAlgebraicNotationTest();
     //runThreadTests();
