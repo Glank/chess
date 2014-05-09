@@ -13,6 +13,7 @@
 #define PAWN_PUSH_END_GAME 4
 #define PAWN_CONNECTION_VALUE 2
 #define OPENED_PEICES_COST 4
+#define KNIGHTS_ON_THE_RIM_COST 4
 #define WN1 1
 #define WN2 6
 #define WB1 2
@@ -105,62 +106,64 @@ void ChessHNode_evaluate(ChessHNode* self, ChessHEngine* engine){
     eval-=black_pieces_value;
 
     //pushing and connecting pawns is important, especially in the end game
-    int i;
-    ChessPiece* pawn, * connection;
-    int size, push, rank, file;
-    //white pawns
-    size = info->pieceSets[WHITE]->piecesCounts[PAWN_INDEX];
-    for(i=0; i < size; i++){
-        pawn = info->pieceSets[WHITE]->piecesByType[PAWN_INDEX][i];
-        rank = GET_RANK(pawn->location);
-        if(self->halfMoveNumber>50){ //if end game
-            push = rank-2;
-            eval+= push*push*PAWN_PUSH_END_GAME; //push
-        }
-        else{
-            file = GET_FILE(pawn->location);
-            if(rank<6){ //connections
-                if(file>0){
-                    connection = board->squares[RANK_FILE(rank+1,file-1)];
-                    if(connection!=NULL && connection->type==PAWN && connection->color==WHITE)
-                        eval+=PAWN_CONNECTION_VALUE;
-                }
-                if(file<7){
-                    connection = board->squares[RANK_FILE(rank+1,file+1)];
-                    if(connection!=NULL && connection->type==PAWN && connection->color==WHITE)
-                        eval+=PAWN_CONNECTION_VALUE;
+    {
+        int i;
+        ChessPiece* pawn, * connection;
+        int size, push, rank, file;
+        //white pawns
+        size = info->pieceSets[WHITE]->piecesCounts[PAWN_INDEX];
+        for(i=0; i < size; i++){
+            pawn = info->pieceSets[WHITE]->piecesByType[PAWN_INDEX][i];
+            rank = GET_RANK(pawn->location);
+            if(self->halfMoveNumber>50){ //if end game
+                push = rank-2;
+                eval+= push*push*PAWN_PUSH_END_GAME; //push
+            }
+            else{
+                file = GET_FILE(pawn->location);
+                if(rank<6){ //connections
+                    if(file>0){
+                        connection = board->squares[RANK_FILE(rank+1,file-1)];
+                        if(connection!=NULL && connection->type==PAWN && connection->color==WHITE)
+                            eval+=PAWN_CONNECTION_VALUE;
+                    }
+                    if(file<7){
+                        connection = board->squares[RANK_FILE(rank+1,file+1)];
+                        if(connection!=NULL && connection->type==PAWN && connection->color==WHITE)
+                            eval+=PAWN_CONNECTION_VALUE;
+                    }
                 }
             }
         }
-    }
-    //black pawns
-    size = info->pieceSets[BLACK]->piecesCounts[PAWN_INDEX];
-    for(i=0; i < size; i++){
-        pawn = info->pieceSets[BLACK]->piecesByType[PAWN_INDEX][i];
-        rank = GET_RANK(pawn->location);
-        if(self->halfMoveNumber>50){ //if end game
-            push = 6-rank;
-            eval-= push*push*PAWN_PUSH_END_GAME; //push
-        }
-        else{
-            file = GET_FILE(pawn->location);
-            if(rank>1){ //connections
-                if(file>0){
-                    connection = board->squares[RANK_FILE(rank-1,file-1)];
-                    if(connection!=NULL && connection->type==PAWN && connection->color==BLACK)
-                        eval-=PAWN_CONNECTION_VALUE;
-                }
-                if(file<7){
-                    connection = board->squares[RANK_FILE(rank-1,file+1)];
-                    if(connection!=NULL && connection->type==PAWN && connection->color==BLACK)
-                        eval-=PAWN_CONNECTION_VALUE;
+        //black pawns
+        size = info->pieceSets[BLACK]->piecesCounts[PAWN_INDEX];
+        for(i=0; i < size; i++){
+            pawn = info->pieceSets[BLACK]->piecesByType[PAWN_INDEX][i];
+            rank = GET_RANK(pawn->location);
+            if(self->halfMoveNumber>50){ //if end game
+                push = 6-rank;
+                eval-= push*push*PAWN_PUSH_END_GAME; //push
+            }
+            else{
+                file = GET_FILE(pawn->location);
+                if(rank>1){ //connections
+                    if(file>0){
+                        connection = board->squares[RANK_FILE(rank-1,file-1)];
+                        if(connection!=NULL && connection->type==PAWN && connection->color==BLACK)
+                            eval-=PAWN_CONNECTION_VALUE;
+                    }
+                    if(file<7){
+                        connection = board->squares[RANK_FILE(rank-1,file+1)];
+                        if(connection!=NULL && connection->type==PAWN && connection->color==BLACK)
+                            eval-=PAWN_CONNECTION_VALUE;
+                    }
                 }
             }
         }
     }
 
     //opening heuristics
-    if(self->halfMoveNumber<=10){
+    if(self->halfMoveNumber<=20){
         ChessPiece* piece;
         //white
         piece = board->squares[WN1];
@@ -196,38 +199,77 @@ void ChessHNode_evaluate(ChessHNode* self, ChessHEngine* engine){
             eval+=OPENED_PEICES_COST;
     }
 
-    //mop up heuristic
-    ChessPiece* king, * op_king;
-    //cmd = op kings center manhatan distance
-    //md = manhatin distance between the two kings
-    int add_mopup=0, favor, cmd, md, rank_delta, file_delta;
-    //if white is winning a king-rook v king type situation
-    if(black_pieces_value<ROOK_VALUE && white_pieces_value>=ROOK_VALUE){
-        king = info->pieceSets[WHITE]->piecesByType[KING_INDEX][0];
-        op_king = info->pieceSets[BLACK]->piecesByType[KING_INDEX][0];
-        add_mopup=1;
-        favor=10;
-    }//if black is winning...
-    else if(white_pieces_value<ROOK_VALUE && black_pieces_value>=ROOK_VALUE){
-        king = info->pieceSets[WHITE]->piecesByType[KING_INDEX][0];
-        op_king = info->pieceSets[BLACK]->piecesByType[KING_INDEX][0];
-        add_mopup=1;
-        favor=-10;
+    //knights on the rim
+    {
+        ChessPiece* knight;
+        int i, size, rank, file;
+        //white
+        size = info->pieceSets[WHITE]->piecesCounts[KNIGHT_INDEX];
+        for(i=0; i < size; i++){
+            knight = info->pieceSets[WHITE]->piecesByType[KNIGHT_INDEX][i];
+            rank = GET_RANK(knight->location);
+            if(rank==0 || rank==7){
+                eval-=KNIGHTS_ON_THE_RIM_COST;            
+                continue;
+            }
+            file = GET_FILE(knight->location);
+            if(file==0 || file==7){
+                eval-=KNIGHTS_ON_THE_RIM_COST;            
+                continue;
+            }
+        }
+        //black
+        size = info->pieceSets[BLACK]->piecesCounts[KNIGHT_INDEX];
+        for(i=0; i < size; i++){
+            knight = info->pieceSets[BLACK]->piecesByType[KNIGHT_INDEX][i];
+            rank = GET_RANK(knight->location);
+            if(rank==0 || rank==7){
+                eval+=KNIGHTS_ON_THE_RIM_COST;            
+                continue;
+            }
+            file = GET_FILE(knight->location);
+            if(file==0 || file==7){
+                eval+=KNIGHTS_ON_THE_RIM_COST;            
+                continue;
+            }
+        }
     }
-    if(add_mopup){
-        rank = GET_RANK(op_king->location);
-        file = GET_FILE(op_king->location);
-        rank_delta = rank*2-7;
-        rank_delta = rank_delta<0?-rank_delta:rank_delta; // abs(rank_delta)
-        file_delta = file*2-7;
-        file_delta = file_delta<0?-file_delta:file_delta; // abs(file_delta)
-        cmd = rank_delta+file_delta;
-        rank_delta = rank-GET_RANK(king->location);
-        rank_delta = rank_delta<0?-rank_delta:rank_delta; // abs(rank_delta)
-        file_delta = file-GET_FILE(king->location);
-        file_delta = file_delta<0?-file_delta:file_delta; // abs(file_delta)
-        md = rank_delta+file_delta;
-        eval+=favor*((2*cmd-md)*8-self->halfMoveNumber);
+
+    //mop up heuristic
+    {
+        ChessPiece* king, * op_king;
+        int rank, file;
+        //cmd = op kings center manhatan distance
+        //md = manhatin distance between the two kings
+        int add_mopup=0, favor, cmd, md, rank_delta, file_delta;
+        //if white is winning a king-rook v king type situation
+        if(black_pieces_value<ROOK_VALUE && white_pieces_value>=ROOK_VALUE){
+            king = info->pieceSets[WHITE]->piecesByType[KING_INDEX][0];
+            op_king = info->pieceSets[BLACK]->piecesByType[KING_INDEX][0];
+            add_mopup=1;
+            favor=10;
+        }//if black is winning...
+        else if(white_pieces_value<ROOK_VALUE && black_pieces_value>=ROOK_VALUE){
+            king = info->pieceSets[WHITE]->piecesByType[KING_INDEX][0];
+            op_king = info->pieceSets[BLACK]->piecesByType[KING_INDEX][0];
+            add_mopup=1;
+            favor=-10;
+        }
+        if(add_mopup){
+            rank = GET_RANK(op_king->location);
+            file = GET_FILE(op_king->location);
+            rank_delta = rank*2-7;
+            rank_delta = rank_delta<0?-rank_delta:rank_delta; // abs(rank_delta)
+            file_delta = file*2-7;
+            file_delta = file_delta<0?-file_delta:file_delta; // abs(file_delta)
+            cmd = rank_delta+file_delta;
+            rank_delta = rank-GET_RANK(king->location);
+            rank_delta = rank_delta<0?-rank_delta:rank_delta; // abs(rank_delta)
+            file_delta = file-GET_FILE(king->location);
+            file_delta = file_delta<0?-file_delta:file_delta; // abs(file_delta)
+            md = rank_delta+file_delta;
+            eval+=favor*((2*cmd-md)*8-self->halfMoveNumber);
+        }
     }
 
     //fuzz
