@@ -14,12 +14,14 @@ typedef struct SearchThread SearchThread;
 typedef struct TTable TTable;
 typedef struct TNode TNode;
 
+//TODO make these structures private
 struct TNode{
     zob_hash_t hash;
     int evaluation;
     int depth;
     int isCut;
     int halfMoveNumber;
+    //add continuation line
 };
 struct TTable{
     TNode nodes[TTABLE_SIZE];
@@ -31,6 +33,7 @@ struct TTable{
 TTable* TTable_new();
 void TTable_delete(TTable* self);
 
+//TODO make this structure private
 struct SearchThread{
     ChessThread* thread;
     ChessMutex* bestLineMutex;

@@ -72,27 +72,27 @@ typedef uint16_t move_t;
 //the FEN starting position
 #define FEN_START "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
 
+//TODO: makes this read-only
 struct ChessPiece{
     location_t location;
     color_e color;
     pieceType_e type;
 };
 
-//This structure should act only as an index
-//to help accelerate operations done by ChessBoard.
-//It should not be interfaced with by anything outside of
-//board.c
+//TODO: make this private
 struct ChessPieceSet{
     ChessPiece** piecesByType[6];
     int piecesCounts[6];
 };
 
+//TODO: make this private
 struct BoardBackup{
     flag_t flags;
     zob_hash_t hash;
     int fiftyMoveCount;
 };
 
+//TODO: move this back into ChessBoard
 struct GameInfo{
     move_t moves[MAX_MOVES];
     BoardBackup backups[MAX_MOVES];
@@ -102,6 +102,7 @@ struct GameInfo{
     int capturedCount;
 };
 
+//TODO: make this private
 struct ChessBoard{
     void* extra;
     int fiftyMoveCount;

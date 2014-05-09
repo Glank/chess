@@ -3,14 +3,12 @@
 #include "moves.h"
 #include "board.h"
 
-void initChessHeuristics(ChessBoard* board);
-void closeChessHeuristics();
-
 typedef enum {ESTIMATE, ABSOLUTE} evalType_e;
 
 typedef struct ChessHEngine ChessHEngine;
 typedef struct ChessHNode ChessHNode;
 
+//TODO: make this private
 struct ChessHEngine{
     ChessMoveGenerator* expGen;
     ChessMoveGenerator* evalGen;
@@ -19,6 +17,7 @@ struct ChessHEngine{
 ChessHEngine* ChessHEngine_new(ChessBoard* board);
 void ChessHEngine_delete(ChessHEngine* self);
 
+//TODO: make this private
 struct ChessHNode{
     move_t move;
     struct ChessHNode* parent;
