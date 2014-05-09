@@ -253,9 +253,9 @@ int alphabeta(
     if(tnode!=NULL && tnode->depth>=depth){
         (*lineoutLength) = 0;
         if(tnode->evaluation==INT_MIN)
-            return INT_MIN+node->halfMoveNumber+depth;
+            return INT_MIN+100*node->halfMoveNumber+depth;
         if(tnode->evaluation==INT_MAX)
-            return INT_MAX-(node->halfMoveNumber+depth);
+            return INT_MAX-100*(node->halfMoveNumber+depth);
         return tnode->evaluation;
     }
     if(isDying(self)){

@@ -12,6 +12,17 @@
 #define MOBILITY_VALUE  10
 #define PAWN_PUSH_END_GAME 4
 #define PAWN_CONNECTION_VALUE 2
+#define OPENED_PEICES_COST 4
+#define WN1 1
+#define WN2 6
+#define WB1 2
+#define WB2 5
+#define WQ 3
+#define BN1 62
+#define BB1 61
+#define BQ 59
+#define BB2 58
+#define BN2 57
 
 ChessHEngine* ChessHEngine_new(ChessBoard* board){
     srand(time(NULL));
@@ -146,6 +157,43 @@ void ChessHNode_evaluate(ChessHNode* self, ChessHEngine* engine){
                 }
             }
         }
+    }
+
+    //opening heuristics
+    if(self->halfMoveNumber<=10){
+        ChessPiece* piece;
+        //white
+        piece = board->squares[WN1];
+        if(piece!=NULL && piece->type==KNIGHT && piece->color==WHITE)
+            eval-=OPENED_PEICES_COST;
+        piece = board->squares[WN2];
+        if(piece!=NULL && piece->type==KNIGHT && piece->color==WHITE)
+            eval-=OPENED_PEICES_COST;
+        piece = board->squares[WB1];
+        if(piece!=NULL && piece->type==BISHOP && piece->color==WHITE)
+            eval-=OPENED_PEICES_COST;
+        piece = board->squares[WB2];
+        if(piece!=NULL && piece->type==BISHOP && piece->color==WHITE)
+            eval-=OPENED_PEICES_COST;
+        piece = board->squares[WQ];
+        if(piece!=NULL && piece->type==QUEEN && piece->color==WHITE)
+            eval-=OPENED_PEICES_COST;
+        //black
+        piece = board->squares[BN1];
+        if(piece!=NULL && piece->type==KNIGHT && piece->color==BLACK)
+            eval+=OPENED_PEICES_COST;
+        piece = board->squares[BN2];
+        if(piece!=NULL && piece->type==KNIGHT && piece->color==BLACK)
+            eval+=OPENED_PEICES_COST;
+        piece = board->squares[BB1];
+        if(piece!=NULL && piece->type==BISHOP && piece->color==BLACK)
+            eval+=OPENED_PEICES_COST;
+        piece = board->squares[BB2];
+        if(piece!=NULL && piece->type==BISHOP && piece->color==BLACK)
+            eval+=OPENED_PEICES_COST;
+        piece = board->squares[BQ];
+        if(piece!=NULL && piece->type==QUEEN && piece->color==BLACK)
+            eval+=OPENED_PEICES_COST;
     }
 
     //mop up heuristic

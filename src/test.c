@@ -279,10 +279,8 @@ int runSigTest(){
 }
 
 int main(void){
-    printf("%d\n", INT_MAX);
-    printf("%d\n", INT_MAX-50);
     //runPerftTests();
-    //runSearchTests();
+    runSearchTests();
     //runGenTest(POS_4);
     //runAlgebraicNotationTest();
     //runThreadTests();

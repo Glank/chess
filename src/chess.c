@@ -87,9 +87,9 @@ int gameOver(ChessBoard* board){
     }
     if(ChessBoard_testForCheckmate(board)){
         if(board->flags&TO_PLAY_FLAG)
-            printf("0-1\n");
-        else
             printf("1-0\n");
+        else
+            printf("0-1\n");
         return 1;
     }
     return 0;
