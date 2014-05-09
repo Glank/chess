@@ -80,8 +80,18 @@ int ChessBoard_testForCheckmate(ChessBoard* self){
     return isInCheckmate;
 }
 
+int ChessBoard_testForStalemate(ChessBoard* self){
+    if(ChessBoard_testForCheck(self))
+        return 0;
+    ChessMoveGenerator* gen = ChessMoveGenerator_new(self);
+    ChessMoveGenerator_generateMoves(gen, 1, NULL);
+    int isInStalemate= gen->nextCount==0;
+    ChessMoveGenerator_delete(gen);
+    return isInStalemate;
+}
+
 int gameOver(ChessBoard* board){
-    if(ChessBoard_isInOptionalDraw(board)){
+    if(ChessBoard_testForStalemate(board) || ChessBoard_isInOptionalDraw(board)){
         printf("1/2-1/2\n");
         return 1;
     }
