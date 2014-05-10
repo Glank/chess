@@ -52,12 +52,27 @@ void doAIMove(ChessBoard* board, TTable* table, int seconds){
     SearchThread_delete(thread);
 }
 
-void doHumanMove(ChessBoard* board){
+void doHumanMove(ChessBoard* board, TTable* ponderTable){
+    SearchThread* pondering = NULL;
+    if(ponderTable!=NULL){
+        pondering = SearchThread_new(board, ponderTable);
+        SearchThread_setTimeout(pondering, 0); //don't timeout
+        SearchThread_start(pondering);
+    }
     char* line = getLine();
+    if(pondering!=NULL)
+        SearchThread_stop(pondering);
     move_t move = fromAlgebraicNotation(line, board);
     while(move==0){
         printf("Invalid Move.\n");
+        if(ponderTable!=NULL){
+            pondering = SearchThread_new(board, ponderTable);
+            SearchThread_setTimeout(pondering, 0); //don't timeout
+            SearchThread_start(pondering);
+        }
         line = getLine();
+        if(pondering!=NULL)
+            SearchThread_stop(pondering);
         move = fromAlgebraicNotation(line, board);
     }
     ChessBoard_makeMove(board, move);
@@ -65,7 +80,7 @@ void doHumanMove(ChessBoard* board){
 
 void doMove(ChessBoard* board, TTable* table, int human, int seconds){
     if(human)
-        doHumanMove(board);
+        doHumanMove(board, table);
     else
         doAIMove(board, table, seconds);
 }
