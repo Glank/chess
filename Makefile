@@ -11,11 +11,15 @@ OBJS+=$(BLD)/heuristics.o
 OBJS+=$(BLD)/search.o
 OBJS+=$(BLD)/narrator.o
 OBJS+=$(BLD)/threads.o
+OBJS+=$(BLD)/pgn.o
 
 all: test
 
 $(BLD):
 	mkdir build
+
+$(BLD)/pgn.o: $(BLD) $(SRC)/pgn.h $(SRC)/pgn.c $(SRC)/board.h $(SRC)/moves.h $(SRC)/narrator.h
+	$(CC) $(CFLAGS) $(THREAD_LINK_FLAG) -c $(SRC)/pgn.c -o $(BLD)/pgn.o
 
 $(BLD)/threads.o: $(BLD) $(SRC)/threads.h $(SRC)/threads.c
 	$(CC) $(CFLAGS) $(THREAD_LINK_FLAG) -c $(SRC)/threads.c -o $(BLD)/threads.o
