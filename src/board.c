@@ -233,6 +233,41 @@ int ChessBoard_equals(ChessBoard* self, ChessBoard* other){
     return 1;
 }
 
+ChessBoard* ChessBoard_copy(ChessBoard* self, int deep){
+    ChessBoard* copy = (ChessBoard*)
+        malloc(sizeof(ChessBoard));
+    copy->fiftyMoveCount = self->fiftyMoveCount;
+    copy->flags = self->flags;
+    copy->hash = self->hash;
+    int i;
+    ChessPiece* piece;
+    for(i=0; i<64; i++){
+        if(self->squares[i]==NULL)
+            copy->squares[i]=NULL;
+        else{
+            piece = self->squares[i];
+            piece = ChessPiece_new(
+                piece->color, piece->type, piece->location);
+            copy->squares[i] = piece;
+        }
+    }
+    if(deep){
+        GameInfo* info = (GameInfo*)self->extra;
+        GameInfo* newInfo = (GameInfo*)
+            malloc(sizeof(GameInfo));
+        newInfo->movesCount = info->movesCount;
+        for(i=0; i < info->movesCount; i++)
+            newInfo->moves[i] = info->moves[i];
+        newInfo->capturedCount = info->capturedCount;
+        for(i=0; i < info->capturedCount; i++){
+            piece = info->captured[i];
+            piece = ChessPiece_new(
+                piece->color, piece->type, piece->location);
+            newInfo->captured[i] = piece;
+        }
+    }
+}
+
 int ChessBoard_isInOptionalDraw(ChessBoard* board){
     GameInfo* info = (GameInfo*)board->extra;
     if(board->fiftyMoveCount>=50)
