@@ -54,26 +54,23 @@ void doAIMove(ChessBoard* board, TTable* table, int seconds){
 
 void doHumanMove(ChessBoard* board, TTable* ponderTable){
     SearchThread* pondering = NULL;
+    ChessBoard* ponderingBoard = NULL;
     if(ponderTable!=NULL){
-        pondering = SearchThread_new(board, ponderTable);
+        ponderingBoard = ChessBoard_copy(board);
+        pondering = SearchThread_new(ponderingBoard, ponderTable);
         SearchThread_setTimeout(pondering, 0); //don't timeout
         SearchThread_start(pondering);
     }
     char* line = getLine();
-    if(pondering!=NULL)
-        SearchThread_stop(pondering);
     move_t move = fromAlgebraicNotation(line, board);
     while(move==0){
         printf("Invalid Move.\n");
-        if(ponderTable!=NULL){
-            pondering = SearchThread_new(board, ponderTable);
-            SearchThread_setTimeout(pondering, 0); //don't timeout
-            SearchThread_start(pondering);
-        }
         line = getLine();
-        if(pondering!=NULL)
-            SearchThread_stop(pondering);
         move = fromAlgebraicNotation(line, board);
+    }
+    if(pondering!=NULL){
+        SearchThread_stop(pondering);
+        ChessBoard_delete(ponderingBoard);
     }
     ChessBoard_makeMove(board, move);
 }

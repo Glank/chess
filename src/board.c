@@ -233,39 +233,42 @@ int ChessBoard_equals(ChessBoard* self, ChessBoard* other){
     return 1;
 }
 
-ChessBoard* ChessBoard_copy(ChessBoard* self, int deep){
+ChessBoard* ChessBoard_copy(ChessBoard* self){
     ChessBoard* copy = (ChessBoard*)
         malloc(sizeof(ChessBoard));
-    copy->fiftyMoveCount = self->fiftyMoveCount;
-    copy->flags = self->flags;
-    copy->hash = self->hash;
+    GameInfo* info = (GameInfo*)self->extra;
+    GameInfo* newInfo = (GameInfo*)
+        malloc(sizeof(GameInfo));
+    copy->extra = newInfo;
+    newInfo->pieceSets[WHITE] = ChessPieceSet_new();
+    newInfo->pieceSets[BLACK] = ChessPieceSet_new();
     int i;
     ChessPiece* piece;
     for(i=0; i<64; i++){
-        if(self->squares[i]==NULL)
-            copy->squares[i]=NULL;
-        else{
+        copy->squares[i]=NULL;
+        if(self->squares[i]!=NULL){
             piece = self->squares[i];
             piece = ChessPiece_new(
                 piece->color, piece->type, piece->location);
-            copy->squares[i] = piece;
+            __addPiece(copy, piece);
         }
     }
-    if(deep){
-        GameInfo* info = (GameInfo*)self->extra;
-        GameInfo* newInfo = (GameInfo*)
-            malloc(sizeof(GameInfo));
-        newInfo->movesCount = info->movesCount;
-        for(i=0; i < info->movesCount; i++)
-            newInfo->moves[i] = info->moves[i];
-        newInfo->capturedCount = info->capturedCount;
-        for(i=0; i < info->capturedCount; i++){
-            piece = info->captured[i];
-            piece = ChessPiece_new(
-                piece->color, piece->type, piece->location);
-            newInfo->captured[i] = piece;
-        }
+    newInfo->movesCount = info->movesCount;
+    for(i=0; i < info->movesCount; i++){
+        newInfo->moves[i] = info->moves[i];
+        newInfo->backups[i] = info->backups[i];
     }
+    newInfo->capturedCount = info->capturedCount;
+    for(i=0; i < info->capturedCount; i++){
+        piece = info->captured[i];
+        piece = ChessPiece_new(
+            piece->color, piece->type, piece->location);
+        newInfo->captured[i] = piece;
+    }
+    copy->fiftyMoveCount = self->fiftyMoveCount;
+    copy->flags = self->flags;
+    copy->hash = self->hash;
+    return copy;
 }
 
 int ChessBoard_isInOptionalDraw(ChessBoard* board){

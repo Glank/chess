@@ -113,7 +113,7 @@ struct ChessBoard{
 ChessBoard* ChessBoard_new(const char* fen);
 void ChessBoard_delete(ChessBoard* self);
 int ChessBoard_equals(ChessBoard* self, ChessBoard* other);
-ChessBoard* ChessBoard_copy(ChessBoard* self, int deep);
+ChessBoard* ChessBoard_copy(ChessBoard* self);
 //implementation of this method is found in moves.c
 int ChessBoard_testForCheck(ChessBoard* board);
 int ChessBoard_isInOptionalDraw(ChessBoard* board);

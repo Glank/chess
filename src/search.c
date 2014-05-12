@@ -321,7 +321,8 @@ int alphabeta(
             }
             if(beta < alpha)
                 tnew.isCut=1;
-            TTable_trySave(self->table, &tnew);
+            if(!isDying(self))
+                TTable_trySave(self->table, &tnew);
         }
         lineout[0] = node->children[best]->move;
         *lineoutLength = lineLengths[best]+1;
@@ -345,7 +346,8 @@ int alphabeta(
             }
             if(beta < alpha)
                 tnew.isCut=1;
-            TTable_trySave(self->table, &tnew);
+            if(!isDying(self))
+                TTable_trySave(self->table, &tnew);
         }
         lineout[0] = node->children[best]->move;
         *lineoutLength = lineLengths[best]+1;
