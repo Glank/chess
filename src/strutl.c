@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include "strutl.h"
 int isDigit(char c){
@@ -45,4 +46,21 @@ char* getLine() {
     }
     *line = '\0';
     return linep;
+}
+char* str_unload_buffer(char* buffer, char* out, 
+    int* outLen, int* outMaxLen){
+    int bufferLen = strlen(buffer);
+    while(bufferLen+(*outLen)>(*outMaxLen)){
+        //expand out to twice of it's old max size
+        char* newOut = (char*)
+            malloc(2*((*outMaxLen)+1));
+        (*outMaxLen) = 2*((*outMaxLen)+1)-1;
+        strcpy(newOut, out);
+        free(out);
+        out = newOut;
+    }
+    strcpy(out+(*outLen), buffer);
+    buffer[0] = '\0';
+    (*outLen)+=bufferLen;
+    return out;
 }

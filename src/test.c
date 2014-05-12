@@ -11,6 +11,7 @@
 #include "search.h"
 #include "narrator.h"
 #include "threads.h"
+#include "pgn.h"
 #define LOC(str) (((str[1]-'1')<<3)+((str[0]-'a')))
 #define POS_1_PERFT3 8902
 #define POS_2_PERFT3 97862
@@ -209,9 +210,9 @@ int runAlgebraicNotationTest(){
     ChessBoard* board = ChessBoard_new(FEN_START);
 
     move_t move;
-    move = fromAlgebraicNotation("e4\0", board);
+    move = fromAlgebraicNotation("e4", board);
     ChessBoard_makeMove(board, move);
-    move = fromAlgebraicNotation("d5\0", board);
+    move = fromAlgebraicNotation("d5", board);
     ChessBoard_makeMove(board, move);
     ChessBoard_print(board);
 
@@ -278,12 +279,33 @@ int runSigTest(){
     return 0;
 }
 
+int runPGNTest(){
+    initZobrist();
+    ChessBoard* board = ChessBoard_new(FEN_START);
+    ChessBoard_makeMove(board, fromAlgebraicNotation("f3", board));
+    ChessBoard_makeMove(board, fromAlgebraicNotation("e5", board));
+    ChessBoard_makeMove(board, fromAlgebraicNotation("g4", board));
+    ChessBoard_makeMove(board, fromAlgebraicNotation("Qh4++", board));
+    ChessBoard_print(board);
+
+    PGNRecord* pgn = PGNRecord_newFromBoard(board, 1);
+    char* out = PGNRecord_toString(pgn);
+    printf("%s\n", out);
+    free(out);
+
+    PGNRecord_delete(pgn);
+    ChessBoard_delete(board);
+    closeZobrist();
+    return 0;
+}
+
 int main(void){
     //runPerftTests();
-    runSearchTests();
+    //runSearchTests();
     //runGenTest(POS_4);
     //runAlgebraicNotationTest();
     //runThreadTests();
     //runSigTest();
+    runPGNTest();
     return 0;
 }
