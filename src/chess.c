@@ -170,7 +170,7 @@ void printUsage(){
     printf("  You may play against the computer:\n");
     printf("    ./chess -g h c\n");
     printf("  The 'h' and 'c' mean human player and computer player for the first\n  and second players respectively.\n");
-    printf("  You must input moves in PNG algebraic notation - capitolization counts.\n\n");
+    printf("  You must input moves in PGN algebraic notation - capitolization counts.\n\n");
     printf("  The -s parameter may be included if you want to specify the number of seconds the AI will think (by default 10)\n");
     printf("    ./chess -g h c -s 60\n");
     printf("  You can also play a game from any FEN starting possition:\n");

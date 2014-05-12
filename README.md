@@ -27,7 +27,7 @@ Usage
 
   The 'h' and 'c' mean human player and computer player for the first
   and second players respectively.
-  You must input moves in PNG algebraic notation - capitolization counts.
+  You must input moves in PGN algebraic notation - capitolization counts.
 
   The -s parameter may be included if you want to specify the number of seconds the AI will think (by default 10)
 

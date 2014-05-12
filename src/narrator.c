@@ -62,7 +62,7 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
             //for each other move, check to see if there are multiple pieces
             //of this piece's type that can move to the 'to' square.
             int j;
-            move_t otherMoves[10];
+            move_t otherMoves[20];
             int otherMovesCount = 0;
             move_t otherMove;
             for(j = 0; j < gen->nextCount; j++){
@@ -76,12 +76,13 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
                     otherMoves[otherMovesCount++] = otherMove;
                 }
             }
+            //note if there are multiple moves from the same rank or file
             int sameRank = 0, sameFile = 0;
             for(j = 0; j < otherMovesCount; j++){
                 otherMove = otherMoves[j];
-                if(GET_RANK(move)==GET_RANK(GET_FROM(otherMove)))
+                if(GET_RANK(from)==GET_RANK(GET_FROM(otherMove)))
                     sameRank = 1;
-                if(GET_FILE(move)==GET_FILE(GET_FROM(otherMove)))
+                if(GET_FILE(from)==GET_FILE(GET_FROM(otherMove)))
                     sameFile = 1;
             }
             
