@@ -6,6 +6,9 @@
 int isDigit(char c){
     return (c<='9') && (c>='0');
 }
+int isWhiteSpace(char c){
+    return strchr(" \n\t",c)!=NULL;
+}
 int digitToInt(char digit){
     assert(isDigit(digit));
     return digit-'0';

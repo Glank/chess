@@ -125,9 +125,9 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
             }
         }
     }
-    if(isInCheck)
-        out[i++] = '+';
     if(isInCheckmate)
+        out[i++] = '#';
+    else if(isInCheck)
         out[i++] = '+';
     out[i] = '\0';
     (*outSize) = i;

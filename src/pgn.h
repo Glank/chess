@@ -9,7 +9,8 @@ typedef enum
     {OTHER_RESULT, WHITE_VICTORY, BLACK_VICTORY, DRAW} result_e;
 typedef struct MoveIterator MoveIterator;
 
-PGNRecord* PGNRecord_newFromBoard(ChessBoard* board, int drawAssumable);
+PGNRecord* PGNRecord_newFromBoard(
+    ChessBoard* board, int drawAssumable);
 PGNRecord* PGNRecord_newFromString(char* str);
 PGNRecord* PGNRecord_newFromFile(FILE* fp);
 void PGNRecord_delete(PGNRecord* self);

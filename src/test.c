@@ -285,7 +285,7 @@ int runPGNTest(){
     ChessBoard_makeMove(board, fromAlgebraicNotation("f3", board));
     ChessBoard_makeMove(board, fromAlgebraicNotation("e5", board));
     ChessBoard_makeMove(board, fromAlgebraicNotation("g4", board));
-    ChessBoard_makeMove(board, fromAlgebraicNotation("Qh4++", board));
+    ChessBoard_makeMove(board, fromAlgebraicNotation("Qh4#", board));
     ChessBoard_print(board);
 
     PGNRecord* pgn = PGNRecord_newFromBoard(board, 1);
