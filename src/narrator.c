@@ -59,7 +59,8 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
         if(piece->type==KING)
             out[i++] = 'K';
         else{
-            //for each other move, check to see if there are multiple pieces
+            //for each other move,
+            //check to see if there are multiple pieces
             //of this piece's type that can move to the 'to' square.
             int j;
             move_t otherMoves[20];
@@ -67,16 +68,21 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
             move_t otherMove;
             for(j = 0; j < gen->nextCount; j++){
                 otherMove = gen->next[j];
-                if((GET_TO(otherMove)==to) && (GET_FROM(otherMove)!=from) &&
-                    (board->squares[GET_FROM(otherMove)]->type==piece->type)){
-                    if(piece->type==PAWN && (move&CAPTURE_MOVE_FLAG)!=(otherMove&CAPTURE_MOVE_FLAG))
+                if((GET_TO(otherMove)==to) && 
+                    (GET_FROM(otherMove)!=from) &&
+                    (board->squares[GET_FROM(otherMove)]->type==
+                    piece->type)){
+                    if(piece->type==PAWN &&
+                        (move&CAPTURE_MOVE_FLAG)!=
+                        (otherMove&CAPTURE_MOVE_FLAG))
                         continue;
                     if(otherMove==move)
                         continue;
                     otherMoves[otherMovesCount++] = otherMove;
                 }
             }
-            //note if there are multiple moves from the same rank or file
+            //note if there are multiple moves 
+            //from the same rank or file
             int sameRank = 0, sameFile = 0;
             for(j = 0; j < otherMovesCount; j++){
                 otherMove = otherMoves[j];
@@ -88,7 +94,9 @@ void toAlgebraicNotation(move_t move, ChessBoard* board, char* out, int* outSize
             
             if(piece->type!=PAWN)
                 out[i++] = __pieceTypeToChar(piece->type);
-            if(otherMovesCount){
+            else if(meta&CAPTURE_MOVE_FLAG)
+                out[i++] = __fileToChar(GET_FILE(from));
+            if(piece->type!=PAWN && otherMovesCount){
                 if(!sameFile)
                     out[i++] = __fileToChar(GET_FILE(from));
                 else if(!sameRank)

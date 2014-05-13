@@ -32,7 +32,8 @@ void PGNNode_delete(PGNNode* self){
 }
 
 typedef enum {
-    HEAD_T, TAG_T, COMMENT_T, MOVE_NUMBER_T, MOVE_T, RESULT_T
+    HEAD_T=0, TAG_T=1, COMMENT_T=2, MOVE_NUMBER_T=3, 
+    MOVE_T=4, RESULT_T=5
 } tokenType_e;
 struct PGNToken{
     char* substring;
@@ -53,6 +54,11 @@ void PGNToken_delete(PGNToken* self){
     if(self->prev!=NULL)
         PGNToken_delete(self->prev);
     free(self);
+}
+int PGNToken_substringEquals(PGNToken* self, char* string){
+    if(self->length != strlen(string))
+        return 0;
+    return strncmp(string, self->substring, self->length)==0;
 }
 PGNToken* PGNToken_readTagToken(char* source, PGNToken* tail){
     if(tail==NULL) //eof error
@@ -103,13 +109,13 @@ PGNToken* PGNToken_readOtherToken(char* source, PGNToken* tail){
     tokenType_e type;
     if(source[len-1]=='.')
         type = MOVE_NUMBER_T;
-    else if(len==3 && strncmp("1-0", source, 3))
+    else if(len==3 && strncmp("1-0", source, 3)==0)
         type = RESULT_T;
-    else if(len==3 && strncmp("0-1", source, 3))
+    else if(len==3 && strncmp("0-1", source, 3)==0)
         type = RESULT_T;
-    else if(len==7 && strncmp("1/2-1/2", source, 7))
+    else if(len==7 && strncmp("1/2-1/2", source, 7)==0)
         type = RESULT_T;
-    else if(len==1 && strncmp("*", source, 1))
+    else if(len==1 && strncmp("*", source, 1)==0)
         type = RESULT_T;
     else
         type = MOVE_T;
@@ -198,14 +204,108 @@ PGNRecord* PGNRecord_newFromBoard(ChessBoard* board,
 }
 PGNRecord* PGNRecord_newFromString(char* str){
     PGNToken* tokenTail = PGNToken_tokenize(str);
-    if(tokenTail==NULL)
+    if(tokenTail==NULL){
+        printf("EOF error.\n");
         return NULL; //eof
-    if(tokenTail->type != RESULT_T)
+    }
+    if(tokenTail->type != RESULT_T){
+        printf("Did not end with result. %d\n", tokenTail->type);
+        printf("'%s' %d\n", tokenTail->substring, tokenTail->length);
         return NULL; //did not end with result
+    }
     PGNRecord* self = (PGNRecord*)
         malloc(sizeof(PGNRecord));
+    self->source = (char*)malloc(sizeof(char)*(strlen(str)+1));
+    strcpy(self->source, str);
     //read the result token
-    //TODO
+    if(PGNToken_substringEquals(tokenTail, "1-0"))
+        self->result = WHITE_VICTORY;
+    else if(PGNToken_substringEquals(tokenTail,  "0-1"))
+        self->result = BLACK_VICTORY;
+    else if(PGNToken_substringEquals(tokenTail, "1/2-1/2"))
+        self->result = DRAW;
+    else if(PGNToken_substringEquals(tokenTail, "*"))
+        self->result = OTHER_RESULT;
+    else{
+        PGNRecord_delete(self);
+        PGNToken_delete(tokenTail);
+        printf("Invalid Result\n");
+        return NULL; //invalid result
+    }
+    //count the moves
+    PGNToken* cur = tokenTail;
+    int movesCount = 0;
+    while(cur!=NULL){
+        if(cur->type == MOVE_T)
+            movesCount++;
+        cur = cur->prev;
+    }
+    //get the moves in array form
+    char** moves = (char**)malloc(sizeof(char*)*movesCount);
+    int* moveLengths = (int*)malloc(sizeof(int)*movesCount);
+    int i = movesCount-1;
+    cur = tokenTail;
+    int maxMoveLength = 0;
+    while(i>=0){
+        if(cur->type==MOVE_T){
+            if(cur->length>maxMoveLength)
+                maxMoveLength = cur->length;
+            moveLengths[i] = cur->length;
+            moves[i--] = cur->substring;
+        }
+        cur = cur->prev;
+    }
+    char buffer[100];
+    if(maxMoveLength>=100){
+        PGNRecord_delete(self);
+        PGNToken_delete(tokenTail);
+        free(moves);
+        free(moveLengths);
+        printf("Invalid Move Max Length\n");
+        return NULL; //move length overflow
+    }
+    //parse the moves
+    ChessBoard* board = ChessBoard_new(FEN_START);
+    strncpy(buffer, moves[0], moveLengths[0]);
+    buffer[moveLengths[0]] = '\0';
+    move_t move = fromAlgebraicNotation(buffer, board);
+    if(move==0){
+        PGNRecord_delete(self);
+        PGNToken_delete(tokenTail);
+        free(moves);
+        free(moveLengths);
+        printf("Invalid Move: '%s'\n", buffer);
+        return NULL; //invalid move
+    }
+    ChessBoard_makeMove(board, move);
+    PGNNode* lastNode = PGNNode_new(move, NULL);    
+    PGNNode* node;
+    self->movesHead = lastNode;
+    for(i=1; i < movesCount; i++){
+        strncpy(buffer, moves[i], moveLengths[i]);
+        buffer[moveLengths[i]] = '\0';
+        move = fromAlgebraicNotation(buffer, board);
+        if(move==0){
+            PGNRecord_delete(self);
+            PGNToken_delete(tokenTail);
+            free(moves);
+            free(moveLengths);
+            ChessBoard_print(board);
+            ChessBoard_delete(board);
+            printf("Invalid Move: '%s'\n", buffer);
+            return NULL; //invalid move
+        }
+        node = PGNNode_new(move, NULL);
+        lastNode->next = node;
+        lastNode = node;
+        ChessBoard_makeMove(board, move);
+    }
+    //clean up
+    free(moves);
+    free(moveLengths);
+    ChessBoard_delete(board);
+    PGNToken_delete(tokenTail);
+    return self;
 }
 void PGNRecord_delete(PGNRecord* self){
     if(self->source!=NULL)

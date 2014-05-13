@@ -299,6 +299,30 @@ int runPGNTest(){
     return 0;
 }
 
+int runPGNTest2(){
+    initZobrist();
+    char pgnTest[] = "[tag] \n1. f3{comment}e5 2. g4 Qh4# 0-1";
+    PGNRecord* pgn = PGNRecord_newFromString(pgnTest);
+    if(pgn==NULL){
+        printf("Error.\n");
+        return 1;
+    }
+    char* out = PGNRecord_toString(pgn);
+    printf("%s\n", out);
+    free(out);
+    MoveIterator* iterator = PGNRecord_getMoveIterator(pgn);
+    ChessBoard* board = ChessBoard_new(FEN_START);
+    while(MoveIterator_hasNext(iterator))
+        ChessBoard_makeMove(board, MoveIterator_getNext(iterator));
+    MoveIterator_delete(iterator);
+    ChessBoard_print(board);
+
+    PGNRecord_delete(pgn);
+    ChessBoard_delete(board);
+    closeZobrist();
+    return 0;
+}
+
 int main(void){
     //runPerftTests();
     //runSearchTests();
@@ -306,6 +330,6 @@ int main(void){
     //runAlgebraicNotationTest();
     //runThreadTests();
     //runSigTest();
-    runPGNTest();
+    runPGNTest2();
     return 0;
 }
