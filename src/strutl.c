@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -7,7 +6,13 @@ int isDigit(char c){
     return (c<='9') && (c>='0');
 }
 int isWhiteSpace(char c){
-    return strchr(" \n\t",c)!=NULL;
+    return strchr(" \n\t\r",c)!=NULL;
+}
+int isBlankLine(char* line){
+    while(*line!='\0')
+        if(!isWhiteSpace(*(line++)))
+            return 0;
+    return 1;
 }
 int digitToInt(char digit){
     assert(isDigit(digit));
@@ -22,14 +27,14 @@ int getCharIndex(char c, char* str, int len){
     }
     return -1;
 }
-char* getLine() {
+char* fgetLine(FILE* fp) {
     char * line = malloc(100), * linep = line;
     size_t lenmax = 100, len = lenmax;
     int c;
     if(line == NULL)
         return NULL;
     for(;;){
-        c = fgetc(stdin);
+        c = fgetc(fp);
         if(c == EOF)
             break;
         if(--len == 0) {
@@ -49,6 +54,9 @@ char* getLine() {
     }
     *line = '\0';
     return linep;
+}
+char* getLine() {
+    return fgetLine(stdin);
 }
 char* str_unload_buffer(char* buffer, char* out, 
     int* outLen, int* outMaxLen){

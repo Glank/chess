@@ -323,6 +323,38 @@ int runPGNTest2(){
     return 0;
 }
 
+int runPGNTest3(){
+    initZobrist();
+    char fileName[] = "data/master_games.pgn";
+    FILE* fp = fopen(fileName, "r");
+    PGNRecord* pgn = PGNRecord_newFromFile(fp);
+    int i;
+    for(i = 0; i < 10; i++){
+        printf("%d\n", i);
+        PGNRecord_delete(pgn);
+        pgn = PGNRecord_newFromFile(fp);
+    }
+    if(pgn==NULL){
+        printf("Error.\n");
+        return 1;
+    }
+    char* out = PGNRecord_toString(pgn);
+    printf("%s\n", out);
+    free(out);
+    MoveIterator* iterator = PGNRecord_getMoveIterator(pgn);
+    ChessBoard* board = ChessBoard_new(FEN_START);
+    while(MoveIterator_hasNext(iterator))
+        ChessBoard_makeMove(board, MoveIterator_getNext(iterator));
+    MoveIterator_delete(iterator);
+    ChessBoard_print(board);
+
+    PGNRecord_delete(pgn);
+    ChessBoard_delete(board);
+    closeZobrist();
+    fclose(fp);
+    return 0;
+}
+
 int main(void){
     //runPerftTests();
     //runSearchTests();
@@ -330,6 +362,6 @@ int main(void){
     //runAlgebraicNotationTest();
     //runThreadTests();
     //runSigTest();
-    runPGNTest2();
+    runPGNTest3();
     return 0;
 }

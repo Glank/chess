@@ -210,7 +210,7 @@ PGNRecord* PGNRecord_newFromString(char* str){
     }
     if(tokenTail->type != RESULT_T){
         printf("Did not end with result. %d\n", tokenTail->type);
-        printf("'%s' %d\n", tokenTail->substring, tokenTail->length);
+        printf("[%s] %d\n", tokenTail->substring, tokenTail->length);
         return NULL; //did not end with result
     }
     PGNRecord* self = (PGNRecord*)
@@ -306,6 +306,54 @@ PGNRecord* PGNRecord_newFromString(char* str){
     ChessBoard_delete(board);
     PGNToken_delete(tokenTail);
     return self;
+}
+PGNRecord* PGNRecord_newFromFile(FILE* fp){
+    struct line;
+    struct line{
+        char* string;
+        struct line * next;
+    };
+    struct line * head;
+    struct line * tail;
+    struct line * cur;
+    head = (struct line *)malloc(sizeof(struct line));
+    head->string = fgetLine(fp);
+    head->next = NULL;
+    tail = head;
+    int totalLength = strlen(head->string)+1;
+    //read up until the second blank line
+    int blankLines = isBlankLine(head->string)?1:0;
+    int l = 0;
+    while(blankLines<2){
+        l++;
+        cur = (struct line *)malloc(sizeof(struct line));
+        cur->string = fgetLine(fp);
+        cur->next = NULL;
+        tail->next = cur;
+        tail = cur;
+        totalLength+= strlen(cur->string)+1;
+        if(isBlankLine(cur->string)){
+            blankLines++;
+        }
+    }
+    //combine the lines into one long string
+    char* source = (char*)malloc(sizeof(char)*totalLength);
+    int i = 0;
+    cur = head;
+    while(cur!=NULL){
+        strcpy(source+i, cur->string); 
+        i+=strlen(cur->string);
+        source[i++] = '\n';
+        //clean up as we go
+        free(cur->string);
+        head = cur->next;
+        free(cur);
+        cur = head;
+    }
+    source[i-1] = '\0';
+    PGNRecord* ret = PGNRecord_newFromString(source);
+    free(source);
+    return ret;
 }
 void PGNRecord_delete(PGNRecord* self){
     if(self->source!=NULL)
