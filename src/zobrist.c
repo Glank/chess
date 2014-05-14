@@ -2,6 +2,7 @@
 #include "zobrist.h"
 #include <stdio.h>
 #include <inttypes.h>
+#include <time.h>
 
 void initZobrist(){
     ZOBRIST_TABLE = (zob_hash_t*)malloc(
@@ -16,6 +17,7 @@ void initZobrist(){
         }
         ZOBRIST_TABLE[i] = newHash;
     }
+    srand(time(NULL));
 }
 
 void closeZobrist(){

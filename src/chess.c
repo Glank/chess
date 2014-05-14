@@ -11,6 +11,7 @@
 #include "search.h"
 #include "narrator.h"
 #include "strutl.h"
+#include "opening.h"
 
 SearchThread* thread;
 void interruptHook(int sig){
@@ -177,11 +178,65 @@ void printUsage(){
     printf("    ./chess -g c h \"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2\"\n\n");
 }
 
+int opening_main(int argc, char** argv){
+    int depth = 25;
+    int min = 25; //just for printing
+    initZobrist();
+    int i;
+    int compile=0, print=0, genRandom=0;
+    for(i = 1; i<argc; i++){
+        if(strcmp(argv[i], "-c")==0)
+            compile = 1;
+        else if(strcmp(argv[i], "-p")==0)
+            print = 1;
+        else if(strcmp(argv[i], "-r")==0)
+            genRandom = 1;
+        else if(strcmp(argv[i], "-m")==0){
+            i++;
+            if(i==argc){
+                printf("Invalid use of '-m' arg.\n");
+                return 1;
+            }
+            sscanf(argv[i], "%d", &min);
+        }
+        else{
+            printf("Unknown argument: '%s'\n", argv[i]);
+            return 1;
+        }
+    }
+    if(compile)
+        OpeningBook_generate(OPENING_SOURCE, OPENING_BINARY, depth);
+    if(print || genRandom){
+        OpeningBook* book = OpeningBook_load(OPENING_BINARY);
+        if(print)
+            OpeningBook_print(book, min);
+        if(genRandom){
+            ChessBoard* board = ChessBoard_new(FEN_START);
+            move_t move;
+            while(OpeningBook_hasLine(book, board, min)){
+                move = OpeningBook_randNextMove(book, board, min);
+                ChessBoard_makeMove(board, move);
+            }
+            PGNRecord* pgn = PGNRecord_newFromBoard(board, 1);
+            char* out = PGNRecord_toString(pgn);
+            printf("%s\n", out);
+            free(out);
+            ChessBoard_print(board);
+            ChessBoard_delete(board);
+        }
+        OpeningBook_delete(book);
+    }
+    closeZobrist();
+    return 0;
+}
+
 int main(int argc, char** argv){
     if(argc==3 && strcmp(argv[1], "-p")==0)
         return puzzle_main(argc-1, argv+1);
     else if(argc>3 && strcmp(argv[1], "-g")==0)
         return game_main(argc-1, argv+1);
+    else if(argc>=2 && strcmp(argv[1], "-o")==0)
+        return opening_main(argc-1, argv+1);
     else
         printUsage();
 

@@ -12,6 +12,7 @@
 #include "narrator.h"
 #include "threads.h"
 #include "pgn.h"
+#include "opening.h"
 #define LOC(str) (((str[1]-'1')<<3)+((str[0]-'a')))
 #define POS_1_PERFT3 8902
 #define POS_2_PERFT3 97862
@@ -327,12 +328,13 @@ int runPGNTest3(){
     initZobrist();
     char fileName[] = "data/master_games.pgn";
     FILE* fp = fopen(fileName, "r");
-    PGNRecord* pgn = PGNRecord_newFromFile(fp);
+    int eofFlag = 0;
+    PGNRecord* pgn = PGNRecord_newFromFile(fp, &eofFlag);
     int i;
-    for(i = 0; i < 10; i++){
+    for(i = 0; !eofFlag && i < 10; i++){
         printf("%d\n", i);
         PGNRecord_delete(pgn);
-        pgn = PGNRecord_newFromFile(fp);
+        pgn = PGNRecord_newFromFile(fp, &eofFlag);
     }
     if(pgn==NULL){
         printf("Error.\n");
@@ -355,6 +357,50 @@ int runPGNTest3(){
     return 0;
 }
 
+int runOpeningGenTest(){
+    initZobrist();
+    OpeningBook_generate(OPENING_TEST_SOURCE, OPENING_TEST_BINARY, 10);
+    closeZobrist();
+    return 0;
+}
+
+int runOpeningLoadTest(){
+    initZobrist();
+    OpeningBook* book = OpeningBook_load(OPENING_TEST_BINARY);
+    OpeningBook_delete(book);
+    closeZobrist();
+    return 0;
+}
+
+int runOpeningLookupTest(){
+    initZobrist();
+    char pgnRecord[] = "1. f4 d5 2. Nf3 *";
+    PGNRecord* pgn = PGNRecord_newFromString(pgnRecord);
+    if(pgn==NULL){
+        printf("PGN Error in lookup test\n");
+        return 1;
+    }
+    MoveIterator* iterator = PGNRecord_getMoveIterator(pgn);
+    ChessBoard* board = ChessBoard_new(FEN_START);
+    while(MoveIterator_hasNext(iterator))
+        ChessBoard_makeMove(board, MoveIterator_getNext(iterator));
+    MoveIterator_delete(iterator);
+
+    int minGames = 2;
+    OpeningBook* book = OpeningBook_load(OPENING_TEST_BINARY);
+    assert(OpeningBook_hasLine(book, board, minGames));
+    move_t move = OpeningBook_randNextMove(book, board, minGames);
+    char out[10];
+    int outLen;
+    toAlgebraicNotation(move, board, out, &outLen);
+    
+    OpeningBook_delete(book);
+    PGNRecord_delete(pgn);
+    ChessBoard_delete(board);
+    closeZobrist();
+    return 0;
+}
+
 int main(void){
     //runPerftTests();
     //runSearchTests();
@@ -362,6 +408,9 @@ int main(void){
     //runAlgebraicNotationTest();
     //runThreadTests();
     //runSigTest();
-    runPGNTest3();
+    //runPGNTest3();
+    runOpeningGenTest();
+    runOpeningLoadTest();
+    runOpeningLookupTest();
     return 0;
 }

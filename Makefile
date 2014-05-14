@@ -12,14 +12,18 @@ OBJS+=$(BLD)/search.o
 OBJS+=$(BLD)/narrator.o
 OBJS+=$(BLD)/threads.o
 OBJS+=$(BLD)/pgn.o
+OBJS+=$(BLD)/opening.o
 
 all: test
 
 $(BLD):
 	mkdir build
 
+$(BLD)/opening.o: $(BLD) $(SRC)/opening.c $(SRC)/opening.h $(SRC)/pgn.h $(SRC)/board.h $(SRC)/moves.h $(SRC)/narrator.h
+	$(CC) $(CFLAGS) -c $(SRC)/opening.c -o $(BLD)/opening.o
+
 $(BLD)/pgn.o: $(BLD) $(SRC)/pgn.h $(SRC)/pgn.c $(SRC)/board.h $(SRC)/moves.h $(SRC)/narrator.h
-	$(CC) $(CFLAGS) $(THREAD_LINK_FLAG) -c $(SRC)/pgn.c -o $(BLD)/pgn.o
+	$(CC) $(CFLAGS) -c $(SRC)/pgn.c -o $(BLD)/pgn.o
 
 $(BLD)/threads.o: $(BLD) $(SRC)/threads.h $(SRC)/threads.c
 	$(CC) $(CFLAGS) $(THREAD_LINK_FLAG) -c $(SRC)/threads.c -o $(BLD)/threads.o

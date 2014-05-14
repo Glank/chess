@@ -205,16 +205,15 @@ PGNRecord* PGNRecord_newFromBoard(ChessBoard* board,
 PGNRecord* PGNRecord_newFromString(char* str){
     PGNToken* tokenTail = PGNToken_tokenize(str);
     if(tokenTail==NULL){
-        printf("EOF error.\n");
         return NULL; //eof
     }
     if(tokenTail->type != RESULT_T){
-        printf("Did not end with result. %d\n", tokenTail->type);
-        printf("[%s] %d\n", tokenTail->substring, tokenTail->length);
+        PGNToken_delete(tokenTail);
         return NULL; //did not end with result
     }
     PGNRecord* self = (PGNRecord*)
         malloc(sizeof(PGNRecord));
+    self->movesHead = NULL;
     self->source = (char*)malloc(sizeof(char)*(strlen(str)+1));
     strcpy(self->source, str);
     //read the result token
@@ -229,7 +228,6 @@ PGNRecord* PGNRecord_newFromString(char* str){
     else{
         PGNRecord_delete(self);
         PGNToken_delete(tokenTail);
-        printf("Invalid Result\n");
         return NULL; //invalid result
     }
     //count the moves
@@ -239,6 +237,11 @@ PGNRecord* PGNRecord_newFromString(char* str){
         if(cur->type == MOVE_T)
             movesCount++;
         cur = cur->prev;
+    }
+    if(movesCount==0){
+        PGNRecord_delete(self);
+        PGNToken_delete(tokenTail);
+        return NULL; //no moves
     }
     //get the moves in array form
     char** moves = (char**)malloc(sizeof(char*)*movesCount);
@@ -261,7 +264,6 @@ PGNRecord* PGNRecord_newFromString(char* str){
         PGNToken_delete(tokenTail);
         free(moves);
         free(moveLengths);
-        printf("Invalid Move Max Length\n");
         return NULL; //move length overflow
     }
     //parse the moves
@@ -274,7 +276,6 @@ PGNRecord* PGNRecord_newFromString(char* str){
         PGNToken_delete(tokenTail);
         free(moves);
         free(moveLengths);
-        printf("Invalid Move: '%s'\n", buffer);
         return NULL; //invalid move
     }
     ChessBoard_makeMove(board, move);
@@ -290,9 +291,7 @@ PGNRecord* PGNRecord_newFromString(char* str){
             PGNToken_delete(tokenTail);
             free(moves);
             free(moveLengths);
-            ChessBoard_print(board);
             ChessBoard_delete(board);
-            printf("Invalid Move: '%s'\n", buffer);
             return NULL; //invalid move
         }
         node = PGNNode_new(move, NULL);
@@ -307,7 +306,7 @@ PGNRecord* PGNRecord_newFromString(char* str){
     PGNToken_delete(tokenTail);
     return self;
 }
-PGNRecord* PGNRecord_newFromFile(FILE* fp){
+PGNRecord* PGNRecord_newFromFile(FILE* fp, int* eofFlag){
     struct line;
     struct line{
         char* string;
@@ -352,6 +351,9 @@ PGNRecord* PGNRecord_newFromFile(FILE* fp){
     }
     source[i-1] = '\0';
     PGNRecord* ret = PGNRecord_newFromString(source);
+    if(ret==NULL)
+        if(i<=2)
+            (*eofFlag)=1;
     free(source);
     return ret;
 }

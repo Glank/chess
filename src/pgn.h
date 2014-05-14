@@ -12,7 +12,7 @@ typedef struct MoveIterator MoveIterator;
 PGNRecord* PGNRecord_newFromBoard(
     ChessBoard* board, int drawAssumable);
 PGNRecord* PGNRecord_newFromString(char* str);
-PGNRecord* PGNRecord_newFromFile(FILE* fp);
+PGNRecord* PGNRecord_newFromFile(FILE* fp, int* eofFlag);
 void PGNRecord_delete(PGNRecord* self);
 result_e PGNRecord_getResult(PGNRecord* self);
 MoveIterator* PGNRecord_getMoveIterator(PGNRecord* self);
