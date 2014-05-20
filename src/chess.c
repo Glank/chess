@@ -12,154 +12,51 @@
 #include "narrator.h"
 #include "strutl.h"
 #include "opening.h"
-
-SearchThread* thread;
-void interruptHook(int sig){
-    SearchThread_stop(thread);
-}
+#include "mind.h"
 
 int puzzle_main(int argc, char** argv){
     printf("Press Ctl-C to exit.\n");
     initZobrist();
     ChessBoard* board = ChessBoard_new(argv[1]);
-    TTable* table = TTable_new();
-    thread = SearchThread_new(board, table);
-    SearchThread_setTimeout(thread, 0);
-    SearchThread_setPrintEachNewLine(thread, 1);
-
     ChessBoard_print(board);
-
-    SearchThread_start(thread);
-    SearchThread_join(thread);
-    
-    SearchThread_delete(thread);
-    TTable_delete(table);
+    ChessMind* mind = ChessMind_new(board);
+    ChessMind_puzzleSearch(mind);
+    ChessMind_delete(mind);
     ChessBoard_delete(board);
     closeZobrist();
     return 0;
 }
 
-void doAIMove(ChessBoard* board, TTable* table, int seconds){
-    SearchThread* thread = SearchThread_new(board, table);
-    SearchThread_setTimeout(thread, seconds);
-    SearchThread_start(thread);
-    SearchThread_join(thread);
-    move_t bestMove = SearchThread_getBestMove(thread);
-    char moveOut[10];
-    int moveOutLength;
-    toAlgebraicNotation(bestMove, board, moveOut, &moveOutLength);
-    printf("%s\n", moveOut);
-    ChessBoard_makeMove(board, bestMove);
-    SearchThread_delete(thread);
-}
-
-void doHumanMove(ChessBoard* board, TTable* ponderTable){
-    SearchThread* pondering = NULL;
-    ChessBoard* ponderingBoard = NULL;
-    if(ponderTable!=NULL){
-        ponderingBoard = ChessBoard_copy(board);
-        pondering = SearchThread_new(ponderingBoard, ponderTable);
-        SearchThread_setTimeout(pondering, 0); //don't timeout
-        SearchThread_start(pondering);
-    }
-    char* line = getLine();
-    move_t move = fromAlgebraicNotation(line, board);
-    while(move==0){
-        printf("Invalid Move.\n");
-        line = getLine();
-        move = fromAlgebraicNotation(line, board);
-    }
-    if(pondering!=NULL){
-        SearchThread_stop(pondering);
-        ChessBoard_delete(ponderingBoard);
-    }
-    ChessBoard_makeMove(board, move);
-}
-
-void doMove(ChessBoard* board, TTable* table, int human, int seconds){
-    if(human)
-        doHumanMove(board, table);
-    else
-        doAIMove(board, table, seconds);
-}
-
-int ChessBoard_testForCheckmate(ChessBoard* self){
-    if(!ChessBoard_testForCheck(self))
-        return 0;
-    ChessMoveGenerator* gen = ChessMoveGenerator_new(self);
-    ChessMoveGenerator_generateMoves(gen, 1, NULL);
-    int isInCheckmate = gen->nextCount==0;
-    ChessMoveGenerator_delete(gen);
-    return isInCheckmate;
-}
-
-int ChessBoard_testForStalemate(ChessBoard* self){
-    if(ChessBoard_testForCheck(self))
-        return 0;
-    ChessMoveGenerator* gen = ChessMoveGenerator_new(self);
-    ChessMoveGenerator_generateMoves(gen, 1, NULL);
-    int isInStalemate= gen->nextCount==0;
-    ChessMoveGenerator_delete(gen);
-    return isInStalemate;
-}
-
-int gameOver(ChessBoard* board){
-    if(ChessBoard_testForStalemate(board) || ChessBoard_isInOptionalDraw(board)){
-        printf("1/2-1/2\n");
-        return 1;
-    }
-    if(ChessBoard_testForCheckmate(board)){
-        if(board->flags&TO_PLAY_FLAG)
-            printf("1-0\n");
-        else
-            printf("0-1\n");
-        return 1;
-    }
-    return 0;
-}
-
 int game_main(int argc, char** argv){
-    int players[2];
-    if(strcmp(argv[1], "h")==0)
-        players[0] = 1;
-    else{
-        players[0] = 0;
-        assert(strcmp(argv[1], "c")==0);
+    ChessGame* game = ChessGame_new();
+    int argIndex = 1;
+    int player;
+    int seconds;
+    for(player=0; player<2; player++){
+        if(strcmp(argv[argIndex], "h")==0){
+            ChessGame_setHuman(game, player, 1);
+            argIndex++;
+        }
+        else{
+            assert(strcmp(argv[argIndex], "c")==0);
+            ChessGame_setHuman(game, player, 0);
+            argIndex++;
+            if(argIndex<argc && strcmp(argv[argIndex],"-t")==0){
+                argIndex++;
+                sscanf(argv[argIndex], "%d", &seconds);
+                ChessGame_setTimeout(game, player, seconds);
+                argIndex++;
+            }
+        }
     }
-    if(strcmp(argv[2], "h")==0)
-        players[1] = 1;
-    else{
-        players[1] = 0;
-        assert(strcmp(argv[2], "c")==0);
+    if(argIndex<argc){
+        printf("FEN: '%s'\n", argv[argIndex]);
+        ChessGame_setFEN(game, argv[argIndex++]);
     }
-    int sec_specified = 0;
-    int seconds = 10;
-    if(argc>3 && strcmp(argv[3], "-s")==0){
-        sec_specified = 1;
-        sscanf(argv[4], "%d", &seconds);
-    }
-    initZobrist();
-    TTable* table = TTable_new();
-    ChessBoard* board;
-    if(!sec_specified && argc>3)
-        board = ChessBoard_new(argv[3]);
-    else if(sec_specified && argc>5)
-        board = ChessBoard_new(argv[5]);
-    else
-        board = ChessBoard_new(FEN_START);
 
-    int player = 0;
-    while(!gameOver(board)){
-        printf("%016llX\n", (long long unsigned int)board->hash);
-        ChessBoard_print(board);
-        doMove(board, table, players[player], seconds);
-        player = player?0:1;
-    }
-    printf("%016llX\n", (long long unsigned int)board->hash);
-    ChessBoard_print(board);
-    
-    ChessBoard_delete(board);
-    TTable_delete(table);
+    initZobrist();
+    ChessGame_play(game);
+    ChessGame_delete(game);
     closeZobrist();
     return 0;
 }

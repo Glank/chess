@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include "board.h"
+#include "moves.h"
 
 void __addPiece(ChessBoard* board, ChessPiece* piece);
 void __movePieceByLoc(ChessBoard* self, location_t from,
@@ -114,6 +115,10 @@ void __uncapturePiece(ChessBoard* board){
 
 ChessBoard* ChessBoard_new(const char* fen){
     ChessBoard* board = (ChessBoard*)malloc(sizeof(ChessBoard));
+    if(strcmp(fen, FEN_START)==0)
+        board->standard = 1;
+    else
+        board->standard = 0;
     board->extra = malloc(sizeof(GameInfo));
     GameInfo* info = (GameInfo*)board->extra;
     info->capturedCount = 0;
@@ -585,4 +590,24 @@ void ChessBoard_longPrint(ChessBoard* self){
         }
         printf("\n");
     }
+}
+
+int ChessBoard_testForCheckmate(ChessBoard* self){
+    if(!ChessBoard_testForCheck(self))
+        return 0;
+    ChessMoveGenerator* gen = ChessMoveGenerator_new(self);
+    ChessMoveGenerator_generateMoves(gen, 1, NULL);
+    int isInCheckmate = gen->nextCount==0;
+    ChessMoveGenerator_delete(gen);
+    return isInCheckmate;
+}
+
+int ChessBoard_testForStalemate(ChessBoard* self){
+    if(ChessBoard_testForCheck(self))
+        return 0;
+    ChessMoveGenerator* gen = ChessMoveGenerator_new(self);
+    ChessMoveGenerator_generateMoves(gen, 1, NULL);
+    int isInStalemate= gen->nextCount==0;
+    ChessMoveGenerator_delete(gen);
+    return isInStalemate;
 }

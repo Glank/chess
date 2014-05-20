@@ -13,11 +13,15 @@ OBJS+=$(BLD)/narrator.o
 OBJS+=$(BLD)/threads.o
 OBJS+=$(BLD)/pgn.o
 OBJS+=$(BLD)/opening.o
+OBJS+=$(BLD)/mind.o
 
 all: test
 
 $(BLD):
 	mkdir build
+
+$(BLD)/mind.o: $(BLD) $(SRC)/mind.c $(SRC)/mind.h $(SRC)/opening.h $(SRC)/pgn.h $(SRC)/board.h $(SRC)/moves.h $(SRC)/narrator.h
+	$(CC) $(CFLAGS) -c $(SRC)/mind.c -o $(BLD)/mind.o
 
 $(BLD)/opening.o: $(BLD) $(SRC)/opening.c $(SRC)/opening.h $(SRC)/pgn.h $(SRC)/board.h $(SRC)/moves.h $(SRC)/narrator.h
 	$(CC) $(CFLAGS) -c $(SRC)/opening.c -o $(BLD)/opening.o

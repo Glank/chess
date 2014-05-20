@@ -104,6 +104,7 @@ struct GameInfo{
 
 //TODO: make this private
 struct ChessBoard{
+    int standard;
     void* extra;
     int fiftyMoveCount;
     ChessPiece* squares[64];
@@ -121,4 +122,6 @@ void ChessBoard_makeMove(ChessBoard* self, move_t move);
 move_t ChessBoard_unmakeMove(ChessBoard* self);
 void ChessBoard_print(ChessBoard* self);
 void ChessBoard_longPrint(ChessBoard* self);
+int ChessBoard_testForCheckmate(ChessBoard* self);
+int ChessBoard_testForStalemate(ChessBoard* self);
 #endif

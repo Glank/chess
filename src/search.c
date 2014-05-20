@@ -131,9 +131,9 @@ void TTable_sortChildren(TTable* self, ChessHNode* toSort){
     TTable_recursiveMergeSort(self, toSort, 0, toSort->childrenCount);
 }
 
-const int DEPTH_ORDERS[14] =          {1,2,2,3,3,4,5,5,6,7,7,8,9,9};
-const int QUIECENSE_ORDERS[14] =      {1,0,2,1,3,2,1,3,2,1,3,2,1,2};
-const int DEEP_QUIECENSE_ORDERS[14] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+const int DEPTH_ORDERS[14] =          {1,1,2,2,3,3,4,4,5,5,6};
+const int QUIECENSE_ORDERS[14] =      {1,3,2,4,3,5,4,6,5,7,6};
+const int DEEP_QUIECENSE_ORDERS[14] = {0,0,0,0,0,0,0,0,0,0,0};
 
 void* searchMain(void* args);
 int alphabeta(
@@ -250,7 +250,7 @@ int alphabeta(
     int alpha, int beta,
     move_t* lineout, int* lineoutLength){
     TNode* tnode = TTable_lookup(self->table, node);
-    if(tnode!=NULL && tnode->depth>=depth){
+    if(tnode!=NULL && tnode->depth>=(depth+quiecense+deepQuiecense)){
         (*lineoutLength) = 0;
         if(tnode->evaluation==INT_MIN)
             return INT_MIN+100*node->halfMoveNumber+depth;
@@ -266,7 +266,7 @@ int alphabeta(
         (*lineoutLength) = 0;
         return node->evaluation;
     }
-    //quiecense extencions
+    //quiecense extensions
     if(depth==0){
         int delta = (node->evaluation)-(node->parent->evaluation);
         delta = delta<0?-delta:delta;
