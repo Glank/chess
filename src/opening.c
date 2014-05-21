@@ -1,6 +1,7 @@
 #include "opening.h"
 #include <stdlib.h>
 #include <assert.h>
+#include <errno.h>
 
 //PRIVATE
 typedef struct OpeningNode OpeningNode;
@@ -174,6 +175,8 @@ void OpeningBook_generate(char* sourceName, char* outName,
 }
 OpeningBook* OpeningBook_load(char* fileName){
     FILE* fp = fopen(fileName, "r");
+    if(fp==NULL)
+        return NULL;
     OpeningBook* self = (OpeningBook*)malloc(sizeof(OpeningBook));
     int read;
     read = fread(&(self->sourceGames), sizeof(int), 1, fp);
