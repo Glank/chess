@@ -13,6 +13,7 @@
 #include "strutl.h"
 #include "opening.h"
 #include "mind.h"
+#include "game.h"
 
 int puzzle_main(int argc, char** argv){
     printf("Press Ctl-C to exit.\n");
