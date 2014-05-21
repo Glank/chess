@@ -291,8 +291,13 @@ int runPGNTest(){
 
     PGNRecord* pgn = PGNRecord_newFromBoard(board, 1);
     char* out = PGNRecord_toString(pgn);
-    printf("%s\n", out);
+    printf("%s", out);
     free(out);
+
+    FILE* fp = fopen("data/test_out.pgn", "w");
+    PGNRecord_writeToFile(pgn, fp);
+    PGNRecord_writeToFile(pgn, fp);
+    fclose(fp);
 
     PGNRecord_delete(pgn);
     ChessBoard_delete(board);
@@ -408,9 +413,9 @@ int main(void){
     //runAlgebraicNotationTest();
     //runThreadTests();
     //runSigTest();
-    //runPGNTest3();
-    runOpeningGenTest();
-    runOpeningLoadTest();
-    runOpeningLookupTest();
+    runPGNTest();
+    //runOpeningGenTest();
+    //runOpeningLoadTest();
+    //runOpeningLookupTest();
     return 0;
 }

@@ -76,3 +76,4 @@ clean:
 	rm -f build/* 
 	rm -f test
 	rm -f chess
+	rm -f data/test_out.pgn

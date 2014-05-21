@@ -375,11 +375,32 @@ char* PGNRecord_toString(PGNRecord* self){
         return srcCopy;
     }
     char buffer[32] = "";
+    char resultStr[10] = "";
+    switch(self->result){
+    case OTHER_RESULT:
+        sprintf(resultStr, "*");
+        break;
+    case WHITE_VICTORY:
+        sprintf(resultStr, "1-0");
+        break;
+    case BLACK_VICTORY:
+        sprintf(resultStr, "0-1");
+        break;
+    case DRAW:
+        sprintf(resultStr, "1/2-1/2");
+        break;
+    default:
+        assert(0);
+    }
     int bufferLen = 0;
     int len = 0;
     int maxLen = 31;
     char* out = (char*)malloc(maxLen+1);
     out[0] = '\0';
+    //initial tags
+    sprintf(buffer, "[result \"%s\"]\n\n", resultStr);
+    out = str_unload_buffer(buffer, out, &len, &maxLen);
+    //moves
     MoveIterator* iterator = PGNRecord_getMoveIterator(self);
     int halfMoveNumber = 0;
     move_t move;
@@ -399,26 +420,31 @@ char* PGNRecord_toString(PGNRecord* self){
         out = str_unload_buffer(buffer, out, &len, &maxLen);
         halfMoveNumber++;
     }
-    switch(self->result){
-    case OTHER_RESULT:
-        sprintf(buffer, " *");
-        break;
-    case WHITE_VICTORY:
-        sprintf(buffer, " 1-0");
-        break;
-    case BLACK_VICTORY:
-        sprintf(buffer, " 0-1");
-        break;
-    case DRAW:
-        sprintf(buffer, " 1/2-1/2");
-        break;
-    default:
-        assert(0);
-    }
+    //result terminator
+    sprintf(buffer, " %s\n\n", resultStr);
     out = str_unload_buffer(buffer, out, &len, &maxLen);
     ChessBoard_delete(board);
     MoveIterator_delete(iterator);
     return out;
+}
+ChessBoard* PGNRecord_toBoard(PGNRecord* self){
+    MoveIterator* iterator = PGNRecord_getMoveIterator(self);
+    ChessBoard* board = ChessBoard_new(FEN_START);
+    move_t move;
+    while(MoveIterator_hasNext(iterator)){
+        move = MoveIterator_getNext(iterator);
+        ChessBoard_makeMove(board, move);
+    }
+    MoveIterator_delete(iterator);
+    return board;
+}
+void PGNRecord_writeToFile(PGNRecord* self, FILE* fp){
+    char* str = PGNRecord_toString(self);
+    int writen;
+    int len = strlen(str);
+    writen = fwrite(str, sizeof(char), len, fp);
+    assert(writen == len);
+    free(str);
 }
 
 void MoveIterator_delete(MoveIterator* self){

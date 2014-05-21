@@ -5,6 +5,7 @@
 #include "game.h"
 struct ChessGame{
     char* fen;
+    char* pgnFile;
     int isHuman[2];
     int timeout[2];
     ChessBoard* board;
@@ -14,6 +15,7 @@ struct ChessGame{
 ChessGame* ChessGame_new(){
     ChessGame* self = (ChessGame*)malloc(sizeof(ChessGame));
     self->fen = NULL;
+    self->pgnFile = NULL;
     int player;
     for(player=0; player<2; player++){
         self->isHuman[player] = 1;
@@ -34,11 +36,17 @@ void ChessGame_delete(ChessGame* self){
         ChessBoard_delete(self->board);
     if(self->fen!=NULL)
         free(self->fen);
+    if(self->pgnFile!=NULL)
+        free(self->pgnFile);
     free(self);
 }
 void ChessGame_setFEN(ChessGame* self, char* fen){
     self->fen = (char*)malloc(sizeof(char)*(strlen(fen)+1));
     strcpy(self->fen, fen);
+}
+void ChessGame_setPGNFile(ChessGame* self, char* pgnFile){
+    self->pgnFile = (char*)malloc(sizeof(char)*(strlen(pgnFile)+1));
+    strcpy(self->pgnFile, pgnFile);
 }
 void ChessGame_setHuman(ChessGame* self, int player, int human){
     self->isHuman[player] = human;
@@ -86,8 +94,32 @@ void ChessGame_makeNextMove(ChessGame* self){
 void ChessGame_play(ChessGame* self){
     if(self->fen != NULL)
         self->board = ChessBoard_new(self->fen);
-    else
-        self->board = ChessBoard_new(FEN_START);
+    else if(self->pgnFile != NULL){
+        FILE* fp = fopen(self->pgnFile, "r");
+        if(fp==NULL)
+            self->board = ChessBoard_new(FEN_START);
+        else{
+            int eof=0;
+            PGNRecord* record = PGNRecord_newFromFile(fp, &eof);
+            if(!eof && record!=NULL){
+                PGNRecord* next = PGNRecord_newFromFile(fp, &eof);
+                if(next!=NULL){
+                    printf("Error: this is a multi-game PGN file.\n");
+                    PGNRecord_delete(next);
+                    PGNRecord_delete(record);
+                    fclose(fp);
+                    return;
+                } 
+            }
+            if(record==NULL){
+                printf("Error Reading PGN File.\n");
+                fclose(fp);
+                return;
+            }
+            self->board = PGNRecord_toBoard(record);
+            PGNRecord_delete(record);
+        }
+    }
     assert(self->board!=NULL);
     int player;
     for(player=0;player<2;player++){
@@ -102,5 +134,12 @@ void ChessGame_play(ChessGame* self){
     while(!ChessGame_gameOver(self)){
         ChessGame_makeNextMove(self);
         ChessBoard_print(self->board);
+    }
+    if(self->fen==NULL && self->pgnFile!=NULL){
+        FILE* fp = fopen(self->pgnFile, "w");
+        PGNRecord* pgn = PGNRecord_newFromBoard(self->board, 1);
+        PGNRecord_writeToFile(pgn, fp);
+        PGNRecord_delete(pgn);
+        fclose(fp);
     }
 }

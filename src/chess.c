@@ -51,8 +51,16 @@ int game_main(int argc, char** argv){
         }
     }
     if(argIndex<argc){
-        printf("FEN: '%s'\n", argv[argIndex]);
-        ChessGame_setFEN(game, argv[argIndex++]);
+        if(strcmp(argv[argIndex], "-fen")==0){
+            argIndex++;
+            printf("FEN: '%s'\n", argv[argIndex]);
+            ChessGame_setFEN(game, argv[argIndex++]);
+        }
+        else if(strcmp(argv[argIndex], "-pgn")==0){
+            argIndex++;
+            printf("PGN File: '%s'\n", argv[argIndex]);
+            ChessGame_setPGNFile(game, argv[argIndex++]);
+        }
     }
 
     initZobrist();
