@@ -11,8 +11,11 @@ Build
   To build you just need to run make:
 
     make chess
+    make openings 
 
-  It has only ever been built on Ubuntu 12.04 64 bit.
+  The first command builds the chess main program, the second generates the opening book from the game database.
+
+  It has only ever been built on Ubuntu 12.04 64 bit, so... good luck on any other machine.
 
 Usage
 -----
@@ -29,10 +32,19 @@ Usage
   and second players respectively.
   You must input moves in PGN algebraic notation - capitolization counts.
 
-  The -s parameter may be included if you want to specify the number of seconds the AI will think (by default 10)
+  The -t parameter may be included for either computer player if you want to specify the number of 
+  seconds the AI will think (by default 10)
 
-    ./chess -g h c -s 60
+    ./chess -g h c -t 60
 
   You can also play a game from any FEN starting possition:
 
     ./chess -g c h "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
+
+  The opening interface, -o, may be used to:
+    -c: compile the opening book (can take upwards of an hour),
+    -p: print the opening book for
+    -m: minimum number occurences in the source game database,
+    -r: or generate a random opening..
+
+    ./chess -o -p -m 25 -r

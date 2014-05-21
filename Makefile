@@ -15,10 +15,15 @@ OBJS+=$(BLD)/pgn.o
 OBJS+=$(BLD)/opening.o
 OBJS+=$(BLD)/mind.o
 
-all: test
+all: chess
 
 $(BLD):
 	mkdir build
+
+openings: $(BLD)/openings.dat
+
+$(BLD)/openings.dat: $(BLD) $(BLD)/opening.o data/master_games.pgn chess
+	./chess -o -c
 
 $(BLD)/mind.o: $(BLD) $(SRC)/mind.c $(SRC)/mind.h $(SRC)/opening.h $(SRC)/pgn.h $(SRC)/board.h $(SRC)/moves.h $(SRC)/narrator.h
 	$(CC) $(CFLAGS) -c $(SRC)/mind.c -o $(BLD)/mind.o

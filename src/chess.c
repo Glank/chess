@@ -69,10 +69,17 @@ void printUsage(){
     printf("    ./chess -g h c\n");
     printf("  The 'h' and 'c' mean human player and computer player for the first\n  and second players respectively.\n");
     printf("  You must input moves in PGN algebraic notation - capitolization counts.\n\n");
-    printf("  The -s parameter may be included if you want to specify the number of seconds the AI will think (by default 10)\n");
-    printf("    ./chess -g h c -s 60\n");
+    printf("  The -t parameter may be included for either computer player if you want to specify the number of \n");
+    printf("  seconds the AI will think (by default 10)\n");
+    printf("    ./chess -g h c -t 60\n");
     printf("  You can also play a game from any FEN starting possition:\n");
     printf("    ./chess -g c h \"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2\"\n\n");
+    printf("  The opening interface, -o, may be used to:\n");
+    printf("    -c: compile the opening book (can take upwards of an hour),\n");
+    printf("    -p: print the opening book for\n");
+    printf("    -m: minimum number occurences in the source game database,\n");
+    printf("    -r: or generate a random opening..\n");
+    printf("    ./chess -o -p -m 25 -r\n\n");
 }
 
 int opening_main(int argc, char** argv){
