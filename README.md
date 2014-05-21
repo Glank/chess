@@ -42,9 +42,13 @@ Usage
     ./chess -g c h "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
 
   The opening interface, -o, may be used to:
+  
     -c: compile the opening book (can take upwards of an hour),
+    
     -p: print the opening book for
+    
     -m: minimum number occurences in the source game database,
+    
     -r: or generate a random opening..
 
     ./chess -o -p -m 25 -r
