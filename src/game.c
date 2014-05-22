@@ -120,6 +120,8 @@ void ChessGame_play(ChessGame* self){
             PGNRecord_delete(record);
         }
     }
+    else
+        self->board = ChessBoard_new(FEN_START);
     assert(self->board!=NULL);
     int player;
     for(player=0;player<2;player++){
