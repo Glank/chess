@@ -39,7 +39,7 @@ Usage
 
   You can also play a game from any FEN starting possition:
 
-    ./chess -g c h "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
+    ./chess -g c h -fen "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
 
   You may specify a PGN file to save your game in after it's over.
 
