@@ -3,7 +3,7 @@ chess
 
 A tiny chess AI
 
-Version 0.0.1 (still in alpha, don't expect perfection)
+Version 0.0.2 (still in alpha, don't expect perfection)
 
 Build
 -----
