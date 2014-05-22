@@ -1,0 +1,19 @@
+[Event "None"]
+[Site "Ram 3.9 GiB, Processor 2.3 GHz x4"]
+[Date "2014.05.22"]
+[Round "1"]
+[White "My AI 60 second"]
+[Black "Shredder Computer Chess - Medium"]
+[Result "0-1"]
+
+1. e3 Nf6 2. Nf3 e6 3. Nc3 Nc6 4. Bb5 a6 5. Bxc6 dxc6 6. b3 Bb4 7. Ne2 O-O
+8. Bb2 Ne4 9. Qc1 f6 10. a3 Ba5 11. g3 e5 12. b4 Bg4 13. bxa5 Bxf3 
+14. Rg1 Qd5 15. c4 Qd3 16. Qd1 Rad8 17. Bc1 Nc3 18. Nf4 Nxd1 19. Nxd3 Rxd3
+20. Rb1 c5 21. Ra1 Nc3 22. Rf1 Rfd8 23. h4 Ne4 24. a4 Nd6 25. Ra3 Rxa3 
+26. Bxa3 Nxc4 27. Bc1 Kf7 28. Rg1 Bc6 29. f4 exf4 30. gxf4 Bxa4 
+31. d4 cxd4 32. exd4 Rxd4 33. h5 Rd5 34. Rf1 Rxh5 35. f5 Nxa5 36. Bd2 Nc4
+37. Bc1 g5 38. fxg6+ hxg6 39. Bf4 c5 40. Ke2 b5 41. Rg1 a5 42. Ra1 Bc2
+43. Ra2 Be4 44. Bc7 a4 45. Ra1 Rh3 46. Kf2 g5 47. Bg3 f5 48. Rd1 f4
+49. Rd7+ Ke6 50. Re7+ Kxe7 51. Bxf4 gxf4 52. Kf1 Rh1+ 53. Ke2 a3 
+54. Kf2 a2 55. Ke2 Rh2+ 56. Kd1 a1=Q# 0-1
+

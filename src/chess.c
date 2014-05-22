@@ -82,7 +82,10 @@ void printUsage(){
     printf("  seconds the AI will think (by default 10)\n");
     printf("    ./chess -g h c -t 60\n");
     printf("  You can also play a game from any FEN starting possition:\n");
-    printf("    ./chess -g c h \"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2\"\n\n");
+    printf("    ./chess -g c h -fen \"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2\"\n");
+    printf("  You may specify a PGN file to save your game in after it's over.\n");
+    printf("    ./chess -g c h -pgn file.pgn\n");
+    printf("  If that pgn file already exists and is an incomplete game (result *), the game will be resumed.\n\n");
     printf("  The opening interface, -o, may be used to:\n");
     printf("    -c: compile the opening book (can take upwards of an hour),\n");
     printf("    -p: print the opening book for\n");
