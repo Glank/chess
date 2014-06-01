@@ -5,8 +5,17 @@
 #include "bitboard.h"
 #include "chesserrors.h"
 
+#define BB_TOPLAY_MASK       1
+#define BB_WK_CASTLE_MASK    2
+#define BB_WQ_CASTLE_MASK    4
+#define BB_BK_CASTLE_MASK    8
+#define BB_BQ_CASTLE_MASK   16
+#define BB_EN_PASSANT_MASK  224 
+#define BB_EN_PASSANT_OFF   5
+
 //private
 struct BitBoard{
+    int flags;
     uint64_t pieceSet[2][6]; //by side and type
 };
 void BitBoard_movePiece(BitBoard* self, int color, int type, location_t from, location_t to){
@@ -15,12 +24,27 @@ void BitBoard_movePiece(BitBoard* self, int color, int type, location_t from, lo
 void BitBoard_togglePiece(BitBoard* self, int color, int type, location_t loc){
     self->pieceSet[color][type]^=((uint64_t)1)<<loc;
 }
-void BitBoard_toggleToPlay(BitBoard* self);
-void BitBoard_toggleWhiteKingSideCastle(BitBoard* self);
-void BitBoard_toggleWhiteQueenSideCastle(BitBoard* self);
-void BitBoard_toggleBlackKingSideCastle(BitBoard* self);
+void BitBoard_toggleToPlay(BitBoard* self){
+    self->flags^=BB_TOPLAY_MASK;
+}
+void BitBoard_toggleWhiteKingSideCastle(BitBoard* self){
+    self->flags^=BB_WK_CASTLE_MASK;
+}
+void BitBoard_toggleWhiteQueenSideCastle(BitBoard* self){
+    self->flags^=BB_WQ_CASTLE_MASK;
+}
+void BitBoard_toggleBlackKingSideCastle(BitBoard* self){
+    self->flags^=BB_BK_CASTLE_MASK;
+}
 void BitBoard_toggleBlackQueenSideCastle(BitBoard* self);
-int BitBoard_isValid(BitBoard* self);
+int BitBoard_canWhiteKingSideCastle(BitBoard* self);
+int BitBoard_canWhiteQueenSideCastle(BitBoard* self);
+int BitBoard_canBlackKingSideCastle(BitBoard* self);
+int BitBoard_canBlackQueenSideCastle(BitBoard* self);
+void BitBoard_setEnPassant(BitBoard* self, location_t loc);
+void BitBoard_setHalfMoveClock(BitBoard* self, int value);
+void BitBoard_setMoveNumber(BitBoard* self, int value);
+int BitBoard_validate(BitBoard* self);
 
 //public
 BitBoard* BitBoard_new(){
